@@ -47,6 +47,49 @@
 .icesi-workspace .shadow-lg, .icesi-workspace .shadow-xl { box-shadow: 0 10px 24px rgba(35, 39, 79, .08) !important; }
 .icesi-workspace h2, .icesi-workspace h3 { letter-spacing: -.025em; }
 
+/* Campus image backdrop: it belongs only to the working area. The fixed
+   navigation remains an intentionally solid white anchor for readability. */
+.icesi-main-surface {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+}
+
+.icesi-main-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(246, 247, 251, .46), rgba(246, 247, 251, .46)), url('/fondo.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: .68;
+}
+
+/* Let the photo breathe through cards without sacrificing contrast. */
+.icesi-main-surface .bg-white,
+.icesi-main-surface .bg-slate-900,
+.icesi-main-surface .bg-slate-900\/80,
+.icesi-main-surface .bg-slate-900\/60 { background-color: rgba(255, 255, 255, .86) !important; }
+.icesi-main-surface .bg-slate-50 { background-color: rgba(248, 250, 252, .78) !important; }
+.icesi-main-surface .bg-slate-100 { background-color: rgba(241, 245, 249, .76) !important; }
+.icesi-main-surface .bg-indigo-50,
+.icesi-main-surface .bg-indigo-950,
+.icesi-main-surface .bg-indigo-950\/80,
+.icesi-main-surface .bg-indigo-950\/60 { background-color: rgba(239, 240, 255, .78) !important; }
+.icesi-main-surface .bg-rose-50 { background-color: rgba(255, 241, 242, .82) !important; }
+.icesi-main-surface .bg-amber-50 { background-color: rgba(255, 251, 235, .82) !important; }
+.icesi-main-surface .bg-emerald-50 { background-color: rgba(236, 253, 245, .82) !important; }
+.icesi-main-surface input,
+.icesi-main-surface select,
+.icesi-main-surface textarea { background-color: rgba(255, 255, 255, .9) !important; }
+
+/* The visual language is deliberately orthogonal: every component uses
+   square 90-degree corners, including legacy Tailwind utility classes. */
+*, *::before, *::after { border-radius: 0 !important; }
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f0f2fb; }
 ::-webkit-scrollbar-thumb { background: #b8c0d8; border-radius: 0; }
