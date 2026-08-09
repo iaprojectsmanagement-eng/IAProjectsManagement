@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   CalendarDays,
+  CalendarRange,
   Check,
   CircleDot,
   ChevronRight,
   ChevronDown,
+  List,
   Clock3,
   Download,
   Eye,
@@ -63,6 +65,8 @@ const inDays = (offset: number) => {
   date.setDate(date.getDate() + offset);
   return date.toISOString().slice(0, 10);
 };
+
+const GOOGLE_CALENDAR_EMBED_URL = 'https://calendar.google.com/calendar/embed?src=iaprojectsmanagement%40gmail.com&ctz=America%2FBogota';
 
 const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
   <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${onClick ? 'cursor-pointer' : ''} ${className}`} onClick={onClick} onKeyDown={(event) => { if (onClick && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onClick(); } }} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>{children}</section>
@@ -477,9 +481,11 @@ const ActaUploader: React.FC<{ project: Project; meeting?: ProjectMeeting; onDon
 
 export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: boolean }> = ({ projects, projectId, onChanged, onOpenProject, isMonitor = true }) => {
   const [create, setCreate] = useState(false);
+  const [agendaView, setAgendaView] = useState<'lista' | 'calendario'>('lista');
   const [globalProject, setGlobalProject] = useState(projectId || projects[0]?.id || '');
   const [standaloneActa, setStandaloneActa] = useState(false);
   const [calendarBusy, setCalendarBusy] = useState<string | null>(null);
+  const [batchCalendarBusy, setBatchCalendarBusy] = useState(false);
   const project = projects.find((item) => item.id === (projectId || globalProject));
   const meetings = OperationsService.getMeetings(projectId).sort((a, b) => b.startsAt.localeCompare(a.startsAt));
   const minutes = OperationsService.getMinutes(projectId);
@@ -511,12 +517,39 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
     }
     catch (caught) { window.alert(caught instanceof Error ? caught.message : 'No se pudo cambiar el estado.'); }
   };
+  const syncPendingMeetings = async () => {
+    const pending = meetings.filter((meeting) => (meeting.status === 'programada' || meeting.status === 'reprogramada') && meeting.calendarSync !== 'sincronizado');
+    if (!pending.length) { window.alert('No hay reuniones pendientes de sincronizar.'); return; }
+    setBatchCalendarBusy(true);
+    let synced = 0;
+    let failed = 0;
+    for (const meeting of pending) {
+      try {
+        const result = await CalendarService.sync(meeting.id);
+        if (result.mode === 'google') synced += 1;
+      } catch {
+        failed += 1;
+        OperationsService.updateMeeting(meeting.id, { calendarSync: 'error' });
+      }
+    }
+    setBatchCalendarBusy(false);
+    onChanged();
+    window.alert(failed ? `${synced} reunión(es) sincronizada(s). ${failed} no pudieron sincronizarse.` : `${synced} reunión(es) sincronizada(s) con Google Calendar.`);
+  };
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Heading title={projectId ? 'Reuniones y actas' : 'Agenda'} text={projectId ? 'Las reuniones y actas quedan vinculadas únicamente a este equipo.' : 'Vista transversal del monitor; al crear eliges el proyecto una sola vez.'} action={<Button onClick={() => setCreate((value) => !value)}><Plus className="h-4 w-4" />Programar reunión</Button>} />
+      <Heading title={projectId ? 'Reuniones y actas' : 'Agenda'} text={projectId ? 'Las reuniones y actas quedan vinculadas únicamente a este equipo.' : 'Vista transversal del monitor; al crear eliges el proyecto una sola vez.'} action={<div className="flex flex-wrap items-center justify-end gap-2"><div className="inline-flex border border-slate-200 bg-white p-1" role="group" aria-label="Vista de agenda"><button type="button" aria-pressed={agendaView === 'lista'} onClick={() => setAgendaView('lista')} className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition ${agendaView === 'lista' ? 'bg-[#148D8D] text-white' : 'text-slate-600 hover:bg-slate-100'}`}><List className="h-4 w-4" />Lista</button><button type="button" aria-pressed={agendaView === 'calendario'} onClick={() => setAgendaView('calendario')} className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition ${agendaView === 'calendario' ? 'bg-[#148D8D] text-white' : 'text-slate-600 hover:bg-slate-100'}`}><CalendarRange className="h-4 w-4" />Calendario</button></div>{SyncService.isRemoteMode() && <Button disabled={batchCalendarBusy} tone="secondary" onClick={() => void syncPendingMeetings()}><CalendarDays className="h-4 w-4" />{batchCalendarBusy ? 'Sincronizando…' : 'Sincronizar pendientes'}</Button>}<Button onClick={() => setCreate((value) => !value)}><Plus className="h-4 w-4" />Programar reunión</Button></div>} />
       {create && project && <div className="mb-4">{!projectId && <label className="mb-3 block max-w-md text-xs font-bold text-slate-600">Proyecto<select value={globalProject} onChange={(event) => setGlobalProject(event.target.value)} className={`${inputClass} mt-1`}>{projects.map((item) => <option key={item.id} value={item.id}>{item.code} · {item.title}</option>)}</select></label>}<MeetingForm project={project} onCancel={() => setCreate(false)} onDone={() => { setCreate(false); onChanged(); }} /></div>}
       {projectId && project && <div className="mb-4"><Button tone="secondary" onClick={() => setStandaloneActa((value) => !value)}><FileText className="h-4 w-4" />{standaloneActa ? 'Ocultar carga' : 'Crear acta desde TXT sin reunión'}</Button>{standaloneActa && <ActaUploader project={project} onDone={() => { setStandaloneActa(false); onChanged(); }} />}</div>}
+      {agendaView === 'calendario' ? <Card className="overflow-hidden p-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white p-4">
+          <div><h2 className="font-extrabold">Calendario de reuniones</h2><p className="mt-1 text-xs text-slate-500">Los eventos sincronizados aparecen aquí y también en Google Calendar.</p></div>
+          <a href={GOOGLE_CALENDAR_EMBED_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><CalendarDays className="h-4 w-4" />Abrir en Google Calendar</a>
+        </div>
+        <div className="bg-white p-2 md:p-4"><iframe title="Calendario de reuniones de Project Hub" src={GOOGLE_CALENDAR_EMBED_URL} style={{ border: 0 }} width="800" height="600" frameBorder="0" scrolling="no" className="h-[68vh] min-h-[560px] w-full" /></div>
+        <div className="border-t border-slate-200 bg-slate-50 p-4 text-xs text-slate-600"><p className="font-bold text-slate-800">Calendario institucional</p><p className="mt-1">Si una reunión no aparece, usa “Sincronizar pendientes” o revisa que el evento tenga estado programado y que la integración de Google esté activa.</p></div>
+      </Card> : <>
       <div className="space-y-3">
         {meetings.map((meeting) => {
           const meetingProject = projects.find((item) => item.id === meeting.projectId);
@@ -545,6 +578,7 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
           <div className="mt-3 space-y-2">{minutes.map((minute) => <details key={minute.id} className="rounded-xl border border-slate-100 p-3"><summary className="cursor-pointer text-sm font-bold">{minute.title} <span className="font-normal text-slate-400">· {formatDate(minute.meetingDate)}</span></summary><p className="mt-3 text-sm text-slate-600">{minute.summary}</p><p className="mt-2 text-xs text-slate-500">{minute.decisions.length} decisiones · {minute.commitments.length} compromisos · {minute.status || 'aprobada'}</p></details>)}{!minutes.length && <Empty text="Todavía no hay actas guardadas." />}</div>
         </Card>
       )}
+      </>}
     </div>
   );
 };
