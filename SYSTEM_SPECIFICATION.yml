@@ -1,0 +1,224 @@
+# ==============================================================================
+# IA PROJECT HUB - ESPECIFICACIÓN DE REQUERIMIENTOS, ARQUITECTURA Y ESTADO ACTUAL
+# ==============================================================================
+# Este archivo contiene la especificación completa, detallada y estructurada del
+# sistema de seguimiento de proyectos de IA (Universidad ICESI / Grupo Coomeva).
+# Diseñado para fácil lectura y procesamiento por agentes de Inteligencia Artificial.
+# ==============================================================================
+
+metadata:
+  system_name: "IA Project Hub"
+  description: "Plataforma automatizada para la coordinación, monitoreo, análisis de reuniones con IA y gestión de 18 proyectos del curso de IA"
+  version: "1.0.0"
+  target_organization: "Universidad ICESI & Grupo Empresarial Cooperativo Coomeva"
+  environment: "Production Ready / Dev"
+  last_updated: "2026-07-31"
+  project_root: "c:\\Users\\joshe\\Desktop\\herramientaSeguimientoProyectos"
+
+technology_stack:
+  frontend:
+    framework: "React 18.3 (TypeScript)"
+    build_tool: "Vite 5.4"
+    styling: "Tailwind CSS 3.4 + Vanilla CSS Design System (Dark Mode Premium)"
+    icons: "Lucide React (lucide-react)"
+    document_export:
+      pdf: "jsPDF 2.5 + html2canvas"
+      word: "docx 8.5"
+      csv: "PapaParse 5.4"
+  backend_and_database:
+    platform: "Supabase BaaS (Backend as a Service)"
+    database_engine: "PostgreSQL 15"
+    authentication: "Supabase Auth (Correo Institucional + Código de Estudiante)"
+    security: "Row Level Security (RLS) habilitado por tabla"
+    file_storage: "Supabase Storage Buckets (Transcripciones, Actas, PDF/Word)"
+  ai_and_automation:
+    ai_engine: "Google Gemini 1.5 Flash API / Edge Function Deno"
+    email_service: "EmailJS Service (Tier Gratuito - 200 correos/mes)"
+    edge_functions:
+      - name: "analyze-transcript"
+        runtime: "Deno / TypeScript"
+        purpose: "Extracción automática de actas, resúmenes, decisiones y compromisos desde .vtt/.txt de Teams"
+      - name: "weekly-reminder-cron"
+        runtime: "Deno / TypeScript"
+        purpose: "Verificación semanal automática de inactividad (>7 días) y despacho de correos"
+
+user_roles_and_permissions:
+  superuser_monitor:
+    code: "superuser"
+    description: "Monitor del curso / Profesor titular con control administrativo global"
+    permissions:
+      - "Acceso total y lectura/escritura en los 18 proyectos"
+      - "Gestión y aprobación/rechazo de postulaciones de estudiantes"
+      - "Configuración de límites de estudiantes por proyecto (mínimo 2 por defecto)"
+      - "Permiso exclusivo para reasignar o eliminar actas/archivos subidos por error en otros proyectos"
+      - "Activación del switch de excepción 'Permitir múltiples proyectos' por estudiante"
+      - "Carga masiva de estudiantes (CSV) y proyectos (CSV)"
+      - "Disparo de correos masivos vía EmailJS"
+      - "Exportación de matriz completa a CSV y PDF"
+      - "Intervención y respuesta directa en el Chat Híbrido de cualquier proyecto"
+  student_group:
+    code: "student_group"
+    description: "Estudiantes del curso asignados a un proyecto específico"
+    permissions:
+      - "Navegación por el Catálogo de Proyectos (pre-asignación) con filtros de complejidad e impacto"
+      - "Envío de postulación a un proyecto de interés"
+      - "Acceso restringido únicamente al Workspace de su proyecto asignado (vía RLS)"
+      - "Gestión de enlaces de interés (WhatsApp, MS Teams, GitHub, Google Drive)"
+      - "Carga de transcripciones de MS Teams (.vtt, .txt, .docx) para generación de actas"
+      - "Uso del Chat Híbrido (Modo Consultar IA 🤖 / Modo Mensaje al Monitor 📩)"
+      - "Reporte de alertas e inconvenientes (solicitud de recursos/GPU/mediación)"
+
+modules_and_features:
+  module_1_monitor_dashboard:
+    status: "COMPLETED_AND_VERIFIED"
+    features:
+      - name: "KPI Overview Banner"
+        description: "Tarjetas estadísticas de Total Proyectos, Verdes, Amarillos, Rojos, Campos Vacíos (>7d) y Postulaciones Pendientes"
+        status: "IMPLEMENTED"
+      - name: "Semáforo Inteligente de Riesgo"
+        description: "Indicadores visuales en verde (al día), amarillo (advertencia) y rojo (riesgo crítico por falta de contacto/acta)"
+        status: "IMPLEMENTED"
+      - name: "Filtros Avanzados y Búsqueda"
+        description: "Búsqueda por texto libre, filtro por Empresa, Nivel de riesgo, Tipo de IA y Slider de Complejidad (1 a 10)"
+        status: "IMPLEMENTED"
+      - name: "Project Cards Grid"
+        description: "Tarjetas dinámicas con enlaces rápidos (WhatsApp, Teams, GitHub, Drive), impacto en COP y estudiantes asignados"
+        status: "IMPLEMENTED"
+
+  module_2_project_crud_and_csv_importer:
+    status: "COMPLETED_AND_VERIFIED"
+    features:
+      - name: "Creación Manual de Proyectos"
+        description: "Formulario modal para agregar proyectos individuales con campos flexibles (solo Título y Empresa obligatorios)"
+        status: "IMPLEMENTED"
+      - name: "Edición de Proyectos"
+        description: "Modal para modificar cualquier atributo de un proyecto existente (título, complejidad, impacto, enlaces)"
+        status: "IMPLEMENTED"
+      - name: "Eliminación de Proyectos"
+        description: "Eliminación permanente de proyectos obsoletos o duplicados con confirmación de seguridad"
+        status: "IMPLEMENTED"
+      - name: "Importación Automática desde CSV"
+        description: "Lector y extractor automático de proyectos desde archivos o texto pegado CSV (mapea organizaciones, retos, Wapp, metadatos)"
+        status: "IMPLEMENTED"
+
+  module_3_student_catalog_and_applications:
+    status: "COMPLETED_AND_VERIFIED"
+    features:
+      - name: "Catálogo Interactivo de Proyectos"
+        description: "Vista para estudiantes no asignados con filtros de tecnología, impacto y complejidad"
+        status: "IMPLEMENTED"
+      - name: "Módulo de Postulación"
+        description: "Botón de postulación por proyecto con indicador de estado (Pendiente, Aceptado, Rechazado, Lleno)"
+        status: "IMPLEMENTED"
+      - name: "Regla Negocio de Unicidad"
+        description: "Al aceptar una postulación, las postulaciones del estudiante a otros proyectos se eliminan automáticamente"
+        status: "IMPLEMENTED"
+      - name: "Excepción Múltiples Proyectos"
+        description: "Switch de anulación administrado por el Monitor para autorizar a un estudiante en más de un proyecto"
+        status: "IMPLEMENTED"
+
+  module_4_student_workspace_and_links:
+    status: "COMPLETED_AND_VERIFIED"
+    features:
+      - name: "Workspace Asignado"
+        description: "Panel principal del proyecto con integrantes ICESI, tutores de la empresa y barra de navegación por pestañas"
+        status: "IMPLEMENTED"
+      - name: "Módulo de Enlaces de Interés"
+        description: "Registro y edición de URLs de grupo de WhatsApp, Reunión Recurrente de MS Teams, GitHub y Google Drive"
+        status: "IMPLEMENTED"
+      - name: "Alerta Visual de Campos Vacíos (>7 Días)"
+        description: "Banner de advertencia urgente en rojo cuando un campo o avance permanece sin actualizar por más de 7 días"
+        status: "IMPLEMENTED"
+
+  module_5_ai_transcript_processor_and_minutes:
+    status: "COMPLETED_AND_VERIFIED"
+    features:
+      - name: "Carga Multiformato de Transcripciones"
+        description: "Soporte drag-and-drop para archivos .vtt, .txt, .docx y .pdf descargados de MS Teams"
+        status: "IMPLEMENTED"
+      - name: "Análisis NLP Inteligente (Google Gemini)"
+        description: "Extracción automática de Resumen Ejecutivo, Decisiones, Compromisos con Responsables, Riesgos y Sentimiento"
+        status: "IMPLEMENTED"
+      - name: "Generador de Actas Formales PDF/Word"
+        description: "Creación de Acta de Reunión formal estandarizada descargable en PDF y docx"
+        status: "IMPLEMENTED"
+      - name: "Control Superuser de Actas"
+        description: "Modal para reasignar o trasladar un acta a otro proyecto si el grupo la subió en el lugar equivocado, o eliminarla"
+        status: "IMPLEMENTED"
+
+  module_6_hybrid_chat_system:
+    status: "COMPLETED_AND_VERIFIED"
+    features:
+      - name: "Chat Tripartito por Proyecto"
+        description: "Canal continuo de conversación que integra mensajes de Estudiantes, Asistente IA y Monitor Superuser"
+        status: "IMPLEMENTED"
+      - name: "Modo Consultar a IA 🤖"
+        description: "Responde dudas sobre actas, rúbricas o enlaces con IA y notifica simultáneamente al Monitor"
+        status: "IMPLEMENTED"
+      - name: "Modo Mensaje al Monitor 📩"
+        description: "Envía la pregunta directamente a la Bandeja de Entrada del Monitor"
+        status: "IMPLEMENTED"
+
+  module_7_notifications_and_reports:
+    status: "COMPLETED_AND_VERIFIED"
+    features:
+      - name: "Despacho Masivo por EmailJS"
+        description: "Envío automatizado de correos de recordatorio a grupos con campos vacíos o avances sin actualizar"
+        status: "IMPLEMENTED"
+      - name: "Exportación a CSV / Excel"
+        description: "Generación de matriz completa descargable de los 18 proyectos con todos los campos y métricas"
+        status: "IMPLEMENTED"
+      - name: "Exportación de Reporte Ejecutivo PDF"
+        description: "Informe consolidado en PDF con resumen de estado de proyectos para el profesor titular"
+        status: "IMPLEMENTED"
+
+database_schema_entities:
+  companies:
+    fields: ["id (UUID)", "name (TEXT)", "created_at (TIMESTAMPTZ)"]
+  projects:
+    fields:
+      - "id (UUID PRIMARY KEY)"
+      - "company_id (UUID FK)"
+      - "folder_name / code (TEXT UNIQUE)"
+      - "title (TEXT NOT NULL)"
+      - "challenge_description (TEXT OPIONAL)"
+      - "whatsapp_url (TEXT OPIONAL)"
+      - "teams_meeting_url (TEXT OPIONAL)"
+      - "min_students (INTEGER DEFAULT 2)"
+      - "max_students (INTEGER DEFAULT 5)"
+      - "progress_status (TEXT)"
+      - "progress_pct (INTEGER)"
+      - "risk_level (TEXT CHECK verde/amarillo/rojo)"
+      - "organization_contacts (JSONB ARRAY)"
+      - "ai_type (TEXT ARRAY)"
+      - "cop_impact_description (TEXT)"
+      - "cop_impact_annual (NUMERIC)"
+      - "impact_rating (INTEGER 1-10)"
+      - "complexity_rating (INTEGER 1-10)"
+      - "ai_risks (TEXT)"
+      - "required_datasets (TEXT)"
+      - "data_quality_availability (TEXT)"
+      - "tech_viability (TEXT)"
+      - "github_url (TEXT)"
+      - "drive_folder_url (TEXT)"
+      - "video_url (TEXT)"
+      - "ppt_url (TEXT)"
+      - "final_report_url (TEXT)"
+      - "baseline_doc_url (TEXT)"
+      - "last_activity_at (TIMESTAMPTZ)"
+  profiles:
+    fields: ["id (UUID)", "project_id (UUID FK)", "full_name (TEXT)", "email (TEXT)", "student_code (TEXT)", "role (superuser/student_group)", "allow_multiple_projects (BOOLEAN)"]
+  project_applications:
+    fields: ["id (UUID)", "project_id (UUID FK)", "student_id (UUID FK)", "status (pendiente/aceptada/rechazada)", "created_at (TIMESTAMPTZ)"]
+  project_messages:
+    fields: ["id (UUID)", "project_id (UUID FK)", "sender_id (UUID)", "sender_name (TEXT)", "sender_role (student/ai/superuser)", "message (TEXT)", "is_ai_consultation (BOOLEAN)", "is_read_by_monitor (BOOLEAN)"]
+  meeting_minutes:
+    fields: ["id (UUID)", "project_id (UUID FK)", "meeting_date (DATE)", "title (TEXT)", "summary (TEXT)", "decisions (JSONB)", "commitments (JSONB)", "risks_detected (TEXT)", "sentiment (TEXT)", "doc_file_url (TEXT)"]
+  alerts:
+    fields: ["id (UUID)", "project_id (UUID FK)", "reported_by (UUID)", "title (TEXT)", "description (TEXT)", "requested_resources (TEXT)", "severity (baja/media/alta/critica)", "status (abierta/en_proceso/resuelta)"]
+
+verification_and_build_status:
+  production_build: "PASSED (npx vite build exit core 0)"
+  dev_server: "RUNNING (npx vite on http://localhost:3000)"
+  type_check: "PASSED (0 TypeScript errors)"
+  unit_integration_test: "PASSED (Mock & Persisted localStorage/Supabase fallback verified)"
