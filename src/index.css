@@ -292,6 +292,7 @@ body { background: var(--palette-white) !important; color: var(--palette-navy) !
 .status-marker--neutral,
 .status-marker--info { color: var(--palette-blue) !important; }
 .status-marker svg { color: currentColor !important; flex: 0 0 auto; }
+.home-dashboard > .mb-5:first-child { display: none !important; }
 
 /* Legacy status spans that still carry a Tailwind background class receive
    the same treatment without changing ordinary project/code labels. */

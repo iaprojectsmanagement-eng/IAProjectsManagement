@@ -123,7 +123,7 @@ export const MonitorHome: React.FC<Common> = ({ projects, onOpenProject }) => {
   ].slice(0, 10);
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="home-dashboard mx-auto max-w-6xl">
       <Heading title="Seguimiento del día" text="Una bandeja de trabajo priorizada: abre el proyecto y resuelve lo que requiere intervención." />
       <div className="grid gap-4 md:grid-cols-3">
         {[
