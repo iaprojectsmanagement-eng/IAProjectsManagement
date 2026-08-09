@@ -16,6 +16,12 @@ export interface CompanyContact {
   phone?: string;
 }
 
+export interface ProjectResourceLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export interface Project {
   id: string;
   code: string; // ej: '3_CEM', '6_PMO'
@@ -56,6 +62,7 @@ export interface Project {
   pptUrl?: string;
   finalReportUrl?: string;
   baselineDocUrl?: string;
+  resourceLinks?: ProjectResourceLink[];
   
   // Activity Timeline & Empty Warning
   lastActivityAt: string; // ISO date

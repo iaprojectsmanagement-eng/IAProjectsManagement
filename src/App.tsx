@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Clock3, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock3, Eye, EyeOff, XCircle } from 'lucide-react';
 import { AppPage, AppShell } from './components/AppShell';
 import { DocumentsView, IssuesView, MeetingsView, MonitorHome, PeopleView, ProjectDetail, ProjectsView, ReportsView, TasksView } from './components/FunctionalViews';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -9,9 +9,19 @@ import { SyncService, SyncState } from './services/syncService';
 const LoginScreen: React.FC<{ onSignIn: (email: string, password: string) => Promise<void> }> = ({ onSignIn }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return <main className="grid min-h-screen place-items-center bg-[#f6f7fb] p-4"><form onSubmit={(event) => { event.preventDefault(); setBusy(true); setError(''); void onSignIn(email.trim(), password).catch((caught) => setError(caught instanceof Error ? caught.message : 'No fue posible iniciar sesión.')).finally(() => setBusy(false)); }} className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#514ff0] font-black text-white">I</div><h1 className="mt-5 text-2xl font-black">Ingresar a Project Hub</h1><p className="mt-2 text-sm text-slate-500">Usa la cuenta institucional creada en Supabase.</p>{error && <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-700">{error}</p>}<label className="mt-5 block text-xs font-bold text-slate-600">Correo<input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" /></label><label className="mt-3 block text-xs font-bold text-slate-600">Contraseña<input required type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" /></label><button disabled={busy} className="mt-5 w-full rounded-xl bg-[#514ff0] px-4 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? 'Ingresando…' : 'Ingresar'}</button><p className="mt-4 text-center text-[11px] text-slate-400">El registro de usuarios y la asignación del primer monitor se realizan en Supabase.</p></form></main>;
+};
+
+const LoginScreenWithVisibility: React.FC<{ onSignIn: (email: string, password: string) => Promise<void> }> = ({ onSignIn }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  return <main className="grid min-h-screen place-items-center bg-[#f6f7fb] p-4"><form onSubmit={(event) => { event.preventDefault(); setBusy(true); setError(''); void onSignIn(email.trim(), password).catch((caught) => setError(caught instanceof Error ? caught.message : 'No fue posible iniciar sesión.')).finally(() => setBusy(false)); }} className="w-full max-w-md border border-slate-200 bg-white p-8 shadow-xl"><div className="grid h-12 w-12 place-items-center bg-[#514ff0] font-black text-white">I</div><h1 className="mt-5 text-2xl font-black">Ingresar a Project Hub</h1><p className="mt-2 text-sm text-slate-500">Usa la cuenta institucional creada en Supabase.</p>{error && <p role="alert" className="mt-4 bg-rose-50 p-3 text-xs font-bold text-rose-700">{error}</p>}<label className="mt-5 block text-xs font-bold text-slate-600">Correo<input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 w-full border border-slate-200 px-3 py-2.5 text-sm" /></label><label className="mt-3 block text-xs font-bold text-slate-600">Contraseña<div className="relative"><input required type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1 w-full border border-slate-200 px-3 py-2.5 pr-10 text-sm" /><button type="button" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword((value) => !value)} className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center text-slate-500 hover:text-[#148D8D]">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></label><button disabled={busy} className="mt-5 w-full bg-[#514ff0] px-4 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? 'Ingresando…' : 'Ingresar'}</button></form></main>;
 };
 
 const Workspace: React.FC = () => {
@@ -47,7 +57,7 @@ const Workspace: React.FC = () => {
   const shared = { projects, onChanged: refresh, onOpenProject: openProject };
 
   if (isLoading) return <div className="grid min-h-screen place-items-center bg-[#f6f7fb] text-sm font-bold text-slate-500">Cargando sesión…</div>;
-  if (!isAuthenticated) return <LoginScreen onSignIn={signIn} />;
+  if (!isAuthenticated) return <LoginScreenWithVisibility onSignIn={signIn} />;
   if (SyncService.isRemoteMode() && !dataReady) return <div className="grid min-h-screen place-items-center bg-[#f6f7fb] p-4"><div className="max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm"><h1 className="text-lg font-black">{syncState.status === 'error' ? 'No se pudieron cargar los datos' : 'Cargando espacio de trabajo…'}</h1><p className="mt-2 text-sm text-slate-500">{syncState.error || 'Estamos aplicando tus permisos y preparando la información autorizada.'}</p>{syncState.status === 'error' && <button onClick={() => { setDataReady(false); void SyncService.bootstrap().then(() => { OperationsService.initialise(); setDataReady(true); refresh(); }); }} className="mt-4 rounded-xl bg-[#514ff0] px-4 py-2 text-xs font-bold text-white">Reintentar</button>}</div></div>;
 
   let content: React.ReactNode;
