@@ -66,7 +66,7 @@ const inDays = (offset: number) => {
   return date.toISOString().slice(0, 10);
 };
 
-const GOOGLE_CALENDAR_EMBED_URL = 'https://calendar.google.com/calendar/embed?src=iaprojectsmanagement%40gmail.com&ctz=America%2FBogota';
+const GOOGLE_CALENDAR_EMBED_URL = 'https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FBogota&mode=MONTH&showPrint=0&showCalendars=0&showTitle=0&src=aWFwcm9qZWN0c21hbmFnZW1lbnRAZ21haWwuY29t&src=ZXMuY28jaG9saWRheUBncm91cC52LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23039be5&color=%230b8043';
 
 const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
   <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${onClick ? 'cursor-pointer' : ''} ${className}`} onClick={onClick} onKeyDown={(event) => { if (onClick && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onClick(); } }} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>{children}</section>
@@ -539,17 +539,19 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Heading title={projectId ? 'Reuniones y actas' : 'Agenda'} text={projectId ? 'Las reuniones y actas quedan vinculadas únicamente a este equipo.' : 'Vista transversal del monitor; al crear eliges el proyecto una sola vez.'} action={<div className="flex flex-wrap items-center justify-end gap-2"><div className="inline-flex border border-slate-200 bg-white p-1" role="group" aria-label="Vista de agenda"><button type="button" aria-pressed={agendaView === 'lista'} onClick={() => setAgendaView('lista')} className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition ${agendaView === 'lista' ? 'bg-[#148D8D] text-white' : 'text-slate-600 hover:bg-slate-100'}`}><List className="h-4 w-4" />Lista</button><button type="button" aria-pressed={agendaView === 'calendario'} onClick={() => setAgendaView('calendario')} className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition ${agendaView === 'calendario' ? 'bg-[#148D8D] text-white' : 'text-slate-600 hover:bg-slate-100'}`}><CalendarRange className="h-4 w-4" />Calendario</button></div>{SyncService.isRemoteMode() && <Button disabled={batchCalendarBusy} tone="secondary" onClick={() => void syncPendingMeetings()}><CalendarDays className="h-4 w-4" />{batchCalendarBusy ? 'Sincronizando…' : 'Sincronizar pendientes'}</Button>}<Button onClick={() => setCreate((value) => !value)}><Plus className="h-4 w-4" />Programar reunión</Button></div>} />
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        <div className="inline-flex border border-slate-200 bg-white p-1" role="group" aria-label="Vista de agenda">
+          <button type="button" aria-pressed={agendaView === 'lista'} onClick={() => setAgendaView('lista')} className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition ${agendaView === 'lista' ? 'bg-[#148D8D] text-white' : 'text-slate-600 hover:bg-slate-100'}`}><List className="h-4 w-4" />Lista</button>
+          <button type="button" aria-pressed={agendaView === 'calendario'} onClick={() => setAgendaView('calendario')} className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-bold transition ${agendaView === 'calendario' ? 'bg-[#148D8D] text-white' : 'text-slate-600 hover:bg-slate-100'}`}><CalendarRange className="h-4 w-4" />Calendario</button>
+        </div>
+        {SyncService.isRemoteMode() && <Button disabled={batchCalendarBusy} tone="secondary" onClick={() => void syncPendingMeetings()}><CalendarDays className="h-4 w-4" />{batchCalendarBusy ? 'Sincronizando…' : 'Sincronizar pendientes'}</Button>}
+        <Button onClick={() => setCreate((value) => !value)}><Plus className="h-4 w-4" />Programar reunión</Button>
+      </div>
       {create && project && <div className="mb-4">{!projectId && <label className="mb-3 block max-w-md text-xs font-bold text-slate-600">Proyecto<select value={globalProject} onChange={(event) => setGlobalProject(event.target.value)} className={`${inputClass} mt-1`}>{projects.map((item) => <option key={item.id} value={item.id}>{item.code} · {item.title}</option>)}</select></label>}<MeetingForm project={project} onCancel={() => setCreate(false)} onDone={() => { setCreate(false); onChanged(); }} /></div>}
       {projectId && project && <div className="mb-4"><Button tone="secondary" onClick={() => setStandaloneActa((value) => !value)}><FileText className="h-4 w-4" />{standaloneActa ? 'Ocultar carga' : 'Crear acta desde TXT sin reunión'}</Button>{standaloneActa && <ActaUploader project={project} onDone={() => { setStandaloneActa(false); onChanged(); }} />}</div>}
-      {agendaView === 'calendario' ? <Card className="overflow-hidden p-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white p-4">
-          <div><h2 className="font-extrabold">Calendario de reuniones</h2><p className="mt-1 text-xs text-slate-500">Los eventos sincronizados aparecen aquí y también en Google Calendar.</p></div>
-          <a href={GOOGLE_CALENDAR_EMBED_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><CalendarDays className="h-4 w-4" />Abrir en Google Calendar</a>
-        </div>
-        <div className="bg-white p-2 md:p-4"><iframe title="Calendario de reuniones de Project Hub" src={GOOGLE_CALENDAR_EMBED_URL} style={{ border: 0 }} width="800" height="600" frameBorder="0" scrolling="no" className="h-[68vh] min-h-[560px] w-full" /></div>
-        <div className="border-t border-slate-200 bg-slate-50 p-4 text-xs text-slate-600"><p className="font-bold text-slate-800">Calendario institucional</p><p className="mt-1">Si una reunión no aparece, usa “Sincronizar pendientes” o revisa que el evento tenga estado programado y que la integración de Google esté activa.</p></div>
-      </Card> : <>
+      {agendaView === 'calendario' ? <div className="w-full overflow-hidden bg-white">
+        <iframe title="Calendario de Project Hub" src={GOOGLE_CALENDAR_EMBED_URL} style={{ borderWidth: 0 }} width="1000" height="500" frameBorder="0" scrolling="no" className="block h-[500px] w-full" />
+      </div> : <>
       <div className="space-y-3">
         {meetings.map((meeting) => {
           const meetingProject = projects.find((item) => item.id === meeting.projectId);
