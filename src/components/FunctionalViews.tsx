@@ -664,7 +664,7 @@ export const DocumentsView: React.FC<Common & { projectId?: string; isMonitor?: 
   const [revising, setRevising] = useState(false);
   const [versions, setVersions] = useState<ProjectDocumentVersion[]>([]);
   const [fileInputKey, setFileInputKey] = useState(0);
-  const [panel, setPanel] = useState<'create' | 'generated' | 'templates' | null>(null);
+  const [panel, setPanel] = useState<'create' | 'generated' | 'templates' | null>('generated');
   const selectedId = projectId || globalProject;
   const documents = OperationsService.getDocuments(projectId);
   const allDocuments = OperationsService.getDocuments();

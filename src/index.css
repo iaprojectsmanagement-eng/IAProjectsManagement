@@ -124,6 +124,17 @@ body { background: var(--palette-white) !important; color: var(--palette-navy) !
   background-image: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), url('/fondo2.png');
   opacity: .9;
 }
+
+/* Mantén el lienzo completo y fijo; solo las tarjetas deben desplazarse. */
+.icesi-main-surface {
+  min-height: calc(100vh - 4rem);
+  background-image: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), url('/fondo2.png') !important;
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+.icesi-main-surface::before { display: none; }
 .icesi-main-surface .bg-white,
 .icesi-main-surface .bg-slate-50,
 .icesi-main-surface .bg-slate-100,
