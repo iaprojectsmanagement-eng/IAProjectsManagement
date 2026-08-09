@@ -66,7 +66,7 @@ const inDays = (offset: number) => {
   return date.toISOString().slice(0, 10);
 };
 
-const GOOGLE_CALENDAR_EMBED_URL = 'https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FBogota&mode=MONTH&showPrint=0&showCalendars=0&showTitle=0&src=aWFwcm9qZWN0c21hbmFnZW1lbnRAZ21haWwuY29t&src=ZXMuY28jaG9saWRheUBncm91cC52LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23039be5&color=%230b8043';
+const GOOGLE_CALENDAR_EMBED_URL = 'https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FBogota&mode=MONTH&showPrint=0&showTitle=0&src=aWFwcm9qZWN0c21hbmFnZW1lbnRAZ21haWwuY29t&src=ZXMuY28jaG9saWRheUBncm91cC52LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23039be5&color=%230b8043';
 
 const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
   <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${onClick ? 'cursor-pointer' : ''} ${className}`} onClick={onClick} onKeyDown={(event) => { if (onClick && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onClick(); } }} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>{children}</section>
