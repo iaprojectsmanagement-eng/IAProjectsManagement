@@ -7,7 +7,7 @@
      or added to public/fonts; the fallbacks keep the UI readable in preview
      and CI environments where proprietary font files are unavailable. */
   --font-body: "SK Curiosity SemiLight", "SK Curiosity", "Segoe UI", sans-serif;
-  --font-display: "Mazzald H Bold", "Mazzald H", "Arial Black", sans-serif;
+  --font-display: "Mazzald H Bold", "Mazzald H", Arial, sans-serif;
 }
 
 @layer base {
@@ -19,6 +19,7 @@
 
   h1, h2, h3, h4, h5, h6,
   .font-black, .font-extrabold { font-family: var(--font-display); }
+  body { font-weight: 400; }
 }
 
 @layer components {
@@ -102,7 +103,170 @@
    square 90-degree corners, including legacy Tailwind utility classes. */
 *, *::before, *::after { border-radius: 0 !important; }
 
+/* Final visual system: only the approved palette and white are used. */
+:root {
+  --palette-navy: #0E2C40;
+  --palette-blue: #1A4A5A;
+  --palette-teal: #148D8D;
+  --palette-green: #C1E1A7;
+  --palette-gold: #EFBC75;
+  --palette-white: #FFFFFF;
+}
+
+body { background: var(--palette-white) !important; color: var(--palette-navy) !important; }
+.icesi-workspace { background: var(--palette-white) !important; color: var(--palette-navy) !important; }
+
+/* The new illustration is stronger and the content panels are opaque. */
+.icesi-main-surface::before {
+  background-image: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), url('/fondo2.png');
+  opacity: .9;
+}
+.icesi-main-surface .bg-white,
+.icesi-main-surface .bg-slate-50,
+.icesi-main-surface .bg-slate-100,
+.icesi-main-surface .bg-indigo-50,
+.icesi-main-surface .bg-indigo-50\/20,
+.icesi-main-surface .bg-indigo-50\/40,
+.icesi-main-surface .bg-indigo-950\/60,
+.icesi-main-surface .bg-rose-50,
+.icesi-main-surface .bg-rose-50\/50,
+.icesi-main-surface .bg-amber-50,
+.icesi-main-surface .bg-emerald-50 { background-color: var(--palette-white) !important; }
+
+/* Dark surfaces use the navy/blue pair and always get white foreground text. */
+.icesi-workspace .bg-slate-950,
+.icesi-workspace .bg-slate-900,
+.icesi-workspace .bg-slate-900\/80,
+.icesi-workspace .bg-slate-900\/60,
+.icesi-workspace .bg-indigo-950,
+.icesi-workspace .bg-indigo-900,
+.icesi-workspace .bg-indigo-900\/80 { background-color: var(--palette-navy) !important; color: var(--palette-white) !important; }
+.icesi-workspace .bg-slate-800,
+.icesi-workspace .bg-slate-700,
+.icesi-workspace .bg-indigo-800 { background-color: var(--palette-blue) !important; color: var(--palette-white) !important; }
+.icesi-workspace .bg-slate-950 [class*="text-"],
+.icesi-workspace .bg-slate-900 [class*="text-"],
+.icesi-workspace .bg-slate-900\/80 [class*="text-"],
+.icesi-workspace .bg-slate-900\/60 [class*="text-"],
+.icesi-workspace .bg-indigo-950 [class*="text-"],
+.icesi-workspace .bg-indigo-900 [class*="text-"],
+.icesi-workspace .bg-indigo-800 [class*="text-"] { color: var(--palette-white) !important; }
+
+/* Teal is the primary action color; gold and green are reserved for status
+   and emphasis badges. Each foreground is chosen for its surface contrast. */
+.icesi-workspace .bg-indigo-600,
+.icesi-workspace .bg-indigo-500,
+.icesi-workspace .bg-emerald-600,
+.icesi-workspace .bg-emerald-500,
+.icesi-workspace .bg-rose-700 { background-color: var(--palette-teal) !important; color: var(--palette-white) !important; }
+.icesi-workspace .bg-rose-600,
+.icesi-workspace .bg-rose-100,
+.icesi-workspace .bg-amber-500,
+.icesi-workspace .bg-amber-100 { background-color: var(--palette-gold) !important; color: var(--palette-navy) !important; }
+.icesi-workspace .bg-emerald-100,
+.icesi-workspace .bg-indigo-100,
+.icesi-workspace .bg-indigo-50 { background-color: var(--palette-green) !important; color: var(--palette-navy) !important; }
+.icesi-workspace .bg-emerald-100 [class*="text-"],
+.icesi-workspace .bg-indigo-100 [class*="text-"],
+.icesi-workspace .bg-indigo-50 [class*="text-"],
+.icesi-workspace .bg-rose-100 [class*="text-"],
+.icesi-workspace .bg-amber-100 [class*="text-"] { color: var(--palette-navy) !important; }
+.icesi-workspace .bg-indigo-600 [class*="text-"],
+.icesi-workspace .bg-indigo-500 [class*="text-"],
+.icesi-workspace .bg-emerald-600 [class*="text-"],
+.icesi-workspace .bg-emerald-500 [class*="text-"],
+.icesi-workspace .bg-rose-700 [class*="text-"] { color: var(--palette-white) !important; }
+
+/* Replace legacy purple, gray and near-black text tokens with the palette. */
+.icesi-workspace .text-white { color: var(--palette-navy) !important; }
+.icesi-workspace .text-slate-100,
+.icesi-workspace .text-slate-200,
+.icesi-workspace .text-slate-300,
+.icesi-workspace .text-slate-400,
+.icesi-workspace .text-slate-500,
+.icesi-workspace .text-slate-600,
+.icesi-workspace .text-slate-700,
+.icesi-workspace .text-slate-900 { color: var(--palette-blue) !important; }
+.icesi-workspace .text-indigo-100,
+.icesi-workspace .text-indigo-200,
+.icesi-workspace .text-indigo-300,
+.icesi-workspace .text-indigo-400,
+.icesi-workspace .text-indigo-600,
+.icesi-workspace .text-indigo-700,
+.icesi-workspace .text-indigo-900 { color: var(--palette-teal) !important; }
+.icesi-workspace .text-rose-200,
+.icesi-workspace .text-rose-300,
+.icesi-workspace .text-rose-400,
+.icesi-workspace .text-rose-500,
+.icesi-workspace .text-rose-600,
+.icesi-workspace .text-rose-700,
+.icesi-workspace .text-rose-900,
+.icesi-workspace .text-amber-300,
+.icesi-workspace .text-amber-400,
+.icesi-workspace .text-amber-600,
+.icesi-workspace .text-amber-700,
+.icesi-workspace .text-amber-800 { color: var(--palette-navy) !important; }
+.icesi-workspace .text-emerald-300,
+.icesi-workspace .text-emerald-400,
+.icesi-workspace .text-emerald-600,
+.icesi-workspace .text-emerald-700,
+.icesi-workspace .text-emerald-800,
+.icesi-workspace .text-sky-300,
+.icesi-workspace .text-sky-400,
+.icesi-workspace .text-purple-300,
+.icesi-workspace .text-purple-400 { color: var(--palette-teal) !important; }
+
+/* Dark components restore white text after the token normalization above. */
+.icesi-workspace .bg-slate-950 [class*="text-"],
+.icesi-workspace .bg-slate-900 [class*="text-"],
+.icesi-workspace .bg-slate-900\/80 [class*="text-"],
+.icesi-workspace .bg-slate-900\/60 [class*="text-"],
+.icesi-workspace .bg-slate-800 [class*="text-"],
+.icesi-workspace .bg-slate-700 [class*="text-"],
+.icesi-workspace .bg-indigo-950 [class*="text-"],
+.icesi-workspace .bg-indigo-900 [class*="text-"],
+.icesi-workspace .bg-indigo-800 [class*="text-"] { color: var(--palette-white) !important; }
+
+/* Softer hierarchy: keep headings distinct but remove the wall of bold text. */
+.icesi-workspace .font-black,
+.icesi-workspace .font-bold { font-weight: 400 !important; }
+.icesi-workspace .font-black,
+.icesi-workspace .font-extrabold { font-weight: 500 !important; }
+.icesi-workspace .font-semibold { font-weight: 400 !important; }
+.icesi-workspace h1,
+.icesi-workspace h2,
+.icesi-workspace h3,
+.icesi-workspace h4,
+.icesi-workspace h5,
+.icesi-workspace h6 { font-weight: 500 !important; }
+.icesi-workspace .shadow-sm,
+.icesi-workspace .shadow,
+.icesi-workspace .shadow-lg,
+.icesi-workspace .shadow-xl { box-shadow: 0 8px 22px rgba(14, 44, 64, .12) !important; }
+.icesi-workspace input,
+.icesi-workspace select,
+.icesi-workspace textarea { border-color: var(--palette-blue) !important; color: var(--palette-navy) !important; background: var(--palette-white) !important; }
+
+[class*="bg-[#514ff0]"] { background-color: var(--palette-teal) !important; }
+.icesi-workspace [class*="text-[#514ff0]"] { color: var(--palette-teal) !important; }
+.icesi-workspace [class*="bg-[#514ff0]"][class*="text-[#514ff0]"],
+.icesi-workspace [class*="bg-[#514ff0]"] [class*="text-[#514ff0]"] { color: var(--palette-white) !important; }
+.icesi-workspace [class*="bg-[#514ff0]"] [class*="text-white"],
+.icesi-workspace [class*="bg-[#514ff0]"][class*="text-white"] { color: var(--palette-white) !important; }
+.icesi-workspace .bg-slate-50,
+.icesi-workspace .bg-slate-100 { background-color: var(--palette-white) !important; }
+.icesi-workspace [class*="border-slate"],
+.icesi-workspace [class*="border-indigo"],
+.icesi-workspace [class*="border-rose"],
+.icesi-workspace [class*="border-amber"] { border-color: rgba(26, 74, 90, .24) !important; }
+.icesi-topbar,
+.icesi-footer,
+.icesi-hero { background: var(--palette-teal) !important; }
+.icesi-hero::after { border-color: var(--palette-gold); }
+.icesi-hero-kicker,
+.icesi-footer-title::after { color: var(--palette-gold); background-color: var(--palette-gold); }
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f0f2fb; }
-::-webkit-scrollbar-thumb { background: #b8c0d8; border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background: #514ff0; }
+::-webkit-scrollbar-track { background: var(--palette-white); }
+::-webkit-scrollbar-thumb { background: var(--palette-blue); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--palette-teal); }
