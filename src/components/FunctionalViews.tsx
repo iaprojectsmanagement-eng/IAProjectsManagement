@@ -5,6 +5,7 @@ import {
   Check,
   CircleDot,
   ChevronRight,
+  ChevronDown,
   Clock3,
   Download,
   Eye,
@@ -63,8 +64,8 @@ const inDays = (offset: number) => {
   return date.toISOString().slice(0, 10);
 };
 
-const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>{children}</section>
+const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
+  <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${onClick ? 'cursor-pointer' : ''} ${className}`} onClick={onClick} onKeyDown={(event) => { if (onClick && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onClick(); } }} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>{children}</section>
 );
 
 const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 'primary' | 'secondary' | 'danger' | 'ghost' }> = ({
@@ -92,6 +93,18 @@ const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 
 const Badge: React.FC<{ children: React.ReactNode; tone?: 'red' | 'amber' | 'green' | 'indigo' | 'slate' }> = ({ children, tone = 'slate' }) => {
   const Icon = tone === 'red' ? AlertTriangle : tone === 'amber' ? Clock3 : tone === 'green' ? Check : tone === 'indigo' ? Info : CircleDot;
   return <span className={`status-marker status-marker--${tone}`}><Icon className="h-3 w-3" aria-hidden="true" />{children}</span>;
+};
+
+const RiskFilter: React.FC<{ value: string; onChange: (value: string) => void }> = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const options = [
+    { value: 'todos', label: 'Todos los riesgos', tone: 'slate' as const },
+    { value: 'rojo', label: 'Riesgo rojo', tone: 'red' as const },
+    { value: 'amarillo', label: 'Riesgo amarillo', tone: 'amber' as const },
+    { value: 'verde', label: 'Riesgo verde', tone: 'green' as const },
+  ];
+  const selected = options.find((option) => option.value === value) || options[0];
+  return <div className="risk-filter relative"><button type="button" className="risk-filter-trigger flex w-full items-center justify-between gap-3" onClick={() => setOpen((current) => !current)} aria-haspopup="listbox" aria-expanded={open}><Badge tone={selected.tone}>{selected.label}</Badge><ChevronDown className="h-4 w-4" /></button>{open && <div className="risk-filter-menu absolute right-0 top-full z-20 mt-1 w-full min-w-[210px]" role="listbox">{options.map((option) => <button type="button" key={option.value} role="option" aria-selected={option.value === value} className="risk-filter-option flex w-full items-center justify-between" onClick={() => { onChange(option.value); setOpen(false); }}><Badge tone={option.tone}>{option.label}</Badge>{option.value === value && <Check className="h-4 w-4" />}</button>)}</div>}</div>;
 };
 
 const Heading: React.FC<{ title: string; text: string; action?: React.ReactNode }> = ({ title, text, action }) => (
@@ -175,7 +188,8 @@ export const ProjectsView: React.FC<Common> = ({ projects, onOpenProject, onChan
   });
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="projects-view mx-auto max-w-6xl">
+      <div className="mb-4 flex justify-end"><Button onClick={() => setCreate((value) => !value)}><Plus className="h-4 w-4" />Nuevo proyecto</Button></div>
       <Heading title="Proyectos" text="Cada proyecto es un único espacio de trabajo con su equipo, reuniones, tareas, incidencias y documentos." action={<Button onClick={() => setCreate((value) => !value)}><Plus className="h-4 w-4" />Nuevo proyecto</Button>} />
       {create && <form onSubmit={(event) => { event.preventDefault(); OperationsService.createProject({ ...newProject, code: newProject.code.trim(), companyName: newProject.companyName.trim(), title: newProject.title.trim(), challengeDescription: newProject.challengeDescription.trim() }); setNewProject({ code: '', companyName: '', title: '', challengeDescription: '', maxStudents: 5 }); setCreate(false); onChanged(); }} className="mb-4 space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4"><div className="grid gap-3 md:grid-cols-2"><label className="text-xs font-bold text-slate-600">Código único<input required value={newProject.code} onChange={(event) => setNewProject({ ...newProject, code: event.target.value })} className={`${inputClass} mt-1`} placeholder="Ej. 21_ANALITICA" /></label><label className="text-xs font-bold text-slate-600">Organización<input required value={newProject.companyName} onChange={(event) => setNewProject({ ...newProject, companyName: event.target.value })} className={`${inputClass} mt-1`} /></label><label className="text-xs font-bold text-slate-600 md:col-span-2">Nombre del proyecto<input required value={newProject.title} onChange={(event) => setNewProject({ ...newProject, title: event.target.value })} className={`${inputClass} mt-1`} /></label><label className="text-xs font-bold text-slate-600 md:col-span-2">Descripción del reto<textarea value={newProject.challengeDescription} onChange={(event) => setNewProject({ ...newProject, challengeDescription: event.target.value })} className={`${inputClass} mt-1`} rows={3} /></label><label className="text-xs font-bold text-slate-600">Capacidad máxima<input required type="number" min={1} max={20} value={newProject.maxStudents} onChange={(event) => setNewProject({ ...newProject, maxStudents: Number(event.target.value) })} className={`${inputClass} mt-1`} /></label></div><div className="flex gap-2"><Button type="submit"><Save className="h-4 w-4" />Crear proyecto</Button><Button type="button" tone="ghost" onClick={() => setCreate(false)}>Cancelar</Button></div></form>}
       <div className="mb-4 grid gap-2 md:grid-cols-[1fr_180px]">
@@ -183,25 +197,19 @@ export const ProjectsView: React.FC<Common> = ({ projects, onOpenProject, onChan
           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
           <input value={search} onChange={(event) => setSearch(event.target.value)} className={`${inputClass} pl-9`} placeholder="Buscar por código, empresa o reto" />
         </label>
-        <select value={risk} onChange={(event) => setRisk(event.target.value)} className={inputClass} aria-label="Filtrar por riesgo">
-          <option value="todos">Todos los riesgos</option>
-          <option value="rojo">Riesgo rojo</option>
-          <option value="amarillo">Riesgo amarillo</option>
-          <option value="verde">Riesgo verde</option>
-        </select>
+        <RiskFilter value={risk} onChange={setRisk} />
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((project) => {
           const openTasks = OperationsService.getTasks(project.id).filter((task) => task.status !== 'completada').length;
           const openIssues = OperationsService.getIssues(project.id).filter((issue) => issue.status !== 'resuelta').length;
           return (
-            <Card key={project.id} className="p-4">
+            <Card key={project.id} className="project-card p-4" onClick={() => onOpenProject(project.id)}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2"><Badge tone={project.riskLevel === 'rojo' ? 'red' : project.riskLevel === 'amarillo' ? 'amber' : 'green'}>{project.code}</Badge><span className="text-xs text-slate-400">{project.companyName}</span></div>
                   <h2 className="mt-2 line-clamp-2 font-extrabold">{project.title}</h2>
                 </div>
-                <Button tone="secondary" onClick={() => onOpenProject(project.id)}>Abrir</Button>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-xl bg-slate-50 p-2"><b className="block">{project.assignedStudents.length}/{project.maxStudents}</b><small className="text-slate-500">equipo</small></div>

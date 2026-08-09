@@ -77,6 +77,7 @@
   background-image: linear-gradient(rgba(246, 247, 251, .46), rgba(246, 247, 251, .46)), url('/fondo.jpg');
   background-position: center;
   background-size: cover;
+  background-attachment: fixed;
   background-repeat: no-repeat;
   opacity: .68;
 }
@@ -293,6 +294,72 @@ body { background: var(--palette-white) !important; color: var(--palette-navy) !
 .status-marker--info { color: var(--palette-blue) !important; }
 .status-marker svg { color: currentColor !important; flex: 0 0 auto; }
 .home-dashboard > .mb-5:first-child { display: none !important; }
+.projects-view > .mb-5 { display: none !important; }
+/* The project form is promoted to a true modal without changing its data
+   flow: the unique code placeholder gives it a stable, semantic selector. */
+body:has(input[placeholder="Ej. 21_ANALITICA"])::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(14, 44, 64, .34);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+body:has(input[placeholder="Ej. 21_ANALITICA"])::before { display: none; }
+body:has(input[placeholder="Ej. 21_ANALITICA"]) .icesi-main-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: rgba(14, 44, 64, .34);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+body:has(input[placeholder="Ej. 21_ANALITICA"]) header,
+body:has(input[placeholder="Ej. 21_ANALITICA"]) aside,
+body:has(input[placeholder="Ej. 21_ANALITICA"]) footer,
+body:has(input[placeholder="Ej. 21_ANALITICA"]) nav { filter: blur(6px); }
+body:has(input[placeholder="Ej. 21_ANALITICA"]) form:has(input[placeholder="Ej. 21_ANALITICA"]) {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 50;
+  width: min(680px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  margin: 0 !important;
+  background: var(--palette-white) !important;
+  border: 1px solid var(--palette-blue) !important;
+  padding: 1.25rem !important;
+  box-shadow: 0 24px 70px rgba(14, 44, 64, .28) !important;
+}
+body:has(input[placeholder="Ej. 21_ANALITICA"]) form:has(input[placeholder="Ej. 21_ANALITICA"])::before {
+  content: 'Nuevo proyecto';
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--palette-navy);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+.risk-filter-trigger {
+  min-height: 42px;
+  padding: .6rem .75rem;
+  border: 1px solid var(--palette-teal);
+  background: var(--palette-white);
+  color: var(--palette-navy);
+}
+.risk-filter-menu {
+  padding: .35rem;
+  border: 1px solid var(--palette-teal);
+  background: var(--palette-white);
+  box-shadow: 0 16px 30px rgba(14, 44, 64, .18);
+}
+.risk-filter-option { padding: .65rem .55rem; color: var(--palette-navy); }
+.risk-filter-option:hover,
+.risk-filter-option[aria-selected="true"] { background: var(--palette-green); }
 
 /* Legacy status spans that still carry a Tailwind background class receive
    the same treatment without changing ordinary project/code labels. */
