@@ -2,11 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* The named families resolve to the supplied fonts when they are installed
+     or added to public/fonts; the fallbacks keep the UI readable in preview
+     and CI environments where proprietary font files are unavailable. */
+  --font-body: "SK Curiosity SemiLight", "SK Curiosity", "Segoe UI", sans-serif;
+  --font-display: "Mazzald H Bold", "Mazzald H", "Arial Black", sans-serif;
+}
+
 @layer base {
   body {
     @apply bg-[#f5f7ff] text-slate-900 font-sans antialiased;
+    font-family: var(--font-body);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  h1, h2, h3, h4, h5, h6,
+  .font-black, .font-extrabold { font-family: var(--font-display); }
 }
 
 @layer components {
