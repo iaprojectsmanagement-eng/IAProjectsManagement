@@ -3,7 +3,9 @@ import {
   AlertTriangle,
   CalendarDays,
   Check,
+  CircleDot,
   ChevronRight,
+  Clock3,
   Download,
   Eye,
   FileText,
@@ -13,6 +15,7 @@ import {
   Save,
   Search,
   Sparkles,
+  Info,
   Trash2,
   UserPlus,
   Users,
@@ -86,21 +89,10 @@ const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 
   </button>
 );
 
-const Badge: React.FC<{ children: React.ReactNode; tone?: 'red' | 'amber' | 'green' | 'indigo' | 'slate' }> = ({ children, tone = 'slate' }) => (
-  <span
-    className={`${
-      {
-        red: 'bg-rose-100 text-rose-700',
-        amber: 'bg-amber-100 text-amber-700',
-        green: 'bg-emerald-100 text-emerald-700',
-        indigo: 'bg-indigo-100 text-indigo-700',
-        slate: 'bg-slate-100 text-slate-600',
-      }[tone]
-    } rounded-full px-2 py-1 text-[10px] font-extrabold uppercase`}
-  >
-    {children}
-  </span>
-);
+const Badge: React.FC<{ children: React.ReactNode; tone?: 'red' | 'amber' | 'green' | 'indigo' | 'slate' }> = ({ children, tone = 'slate' }) => {
+  const Icon = tone === 'red' ? AlertTriangle : tone === 'amber' ? Clock3 : tone === 'green' ? Check : tone === 'indigo' ? Info : CircleDot;
+  return <span className={`status-marker status-marker--${tone}`}><Icon className="h-3 w-3" aria-hidden="true" />{children}</span>;
+};
 
 const Heading: React.FC<{ title: string; text: string; action?: React.ReactNode }> = ({ title, text, action }) => (
   <div className="mb-5 flex flex-wrap items-end justify-between gap-3">

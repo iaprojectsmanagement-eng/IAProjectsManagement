@@ -92,22 +92,22 @@ export const MonitorDashboard: React.FC<MonitorDashboardProps> = ({
     switch (risk) {
       case 'verde':
         return (
-          <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+          <span className="status-marker status-marker--green">
+            <CheckCircle2 className="h-3.5 w-3.5" />
             <span>AL DÍA (VERDE)</span>
           </span>
         );
       case 'amarillo':
         return (
-          <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+          <span className="status-marker status-marker--amber">
+            <AlertTriangle className="h-3.5 w-3.5" />
             <span>ADVERTENCIA</span>
           </span>
         );
       case 'rojo':
         return (
-          <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/60 animate-pulse">
-            <AlertOctagon className="h-3.5 w-3.5 text-rose-400" />
+          <span className="status-marker status-marker--red">
+            <AlertOctagon className="h-3.5 w-3.5" />
             <span>CRÍTICO (ROJO)</span>
           </span>
         );

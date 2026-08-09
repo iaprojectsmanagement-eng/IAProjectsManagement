@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Clock3, XCircle } from 'lucide-react';
 import { AppPage, AppShell } from './components/AppShell';
 import { DocumentsView, IssuesView, MeetingsView, MonitorHome, PeopleView, ProjectDetail, ProjectsView, ReportsView, TasksView } from './components/FunctionalViews';
 import { AuthProvider, useAuth } from './context/AuthContext';

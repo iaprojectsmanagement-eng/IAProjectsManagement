@@ -266,6 +266,70 @@ body { background: var(--palette-white) !important; color: var(--palette-navy) !
 .icesi-hero-kicker,
 .icesi-footer-title::after { color: var(--palette-gold); background-color: var(--palette-gold); }
 
+/* Status markers are intentionally quiet: semantic color, bold label and a
+   tiny matching icon, with no colored capsule behind them. */
+.status-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  font-size: .68rem;
+  font-weight: 700 !important;
+  line-height: 1.2;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.status-marker--red,
+.status-marker--amber,
+.status-marker--critical { color: var(--palette-gold) !important; }
+.status-marker--green,
+.status-marker--success { color: var(--palette-teal) !important; }
+.status-marker--indigo,
+.status-marker--slate,
+.status-marker--neutral,
+.status-marker--info { color: var(--palette-blue) !important; }
+.status-marker svg { color: currentColor !important; flex: 0 0 auto; }
+
+/* Legacy status spans that still carry a Tailwind background class receive
+   the same treatment without changing ordinary project/code labels. */
+.icesi-workspace span[class*="bg-rose-100"],
+.icesi-workspace span[class*="bg-amber-100"],
+.icesi-workspace span[class*="bg-emerald-100"],
+.icesi-workspace span[class*="bg-indigo-100"],
+.icesi-workspace span[class*="bg-slate-100"],
+.icesi-workspace span[class*="bg-rose-950"],
+.icesi-workspace span[class*="bg-amber-950"],
+.icesi-workspace span[class*="bg-emerald-950"] {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  font-weight: 700 !important;
+}
+.icesi-workspace span[class*="bg-rose-100"],
+.icesi-workspace span[class*="bg-rose-950"] { color: var(--palette-gold) !important; }
+.icesi-workspace span[class*="bg-amber-100"],
+.icesi-workspace span[class*="bg-amber-950"] { color: var(--palette-gold) !important; }
+.icesi-workspace span[class*="bg-emerald-100"],
+.icesi-workspace span[class*="bg-emerald-950"] { color: var(--palette-teal) !important; }
+.icesi-workspace span[class*="bg-indigo-100"],
+.icesi-workspace span[class*="bg-slate-100"] { color: var(--palette-blue) !important; }
+.icesi-workspace span[class*="bg-rose-100"]::before,
+.icesi-workspace span[class*="bg-rose-950"]::before,
+.icesi-workspace span[class*="bg-amber-100"]::before,
+.icesi-workspace span[class*="bg-amber-950"]::before { content: '⚠'; }
+.icesi-workspace span[class*="bg-emerald-100"]::before,
+.icesi-workspace span[class*="bg-emerald-950"]::before { content: '✓'; }
+.icesi-workspace span[class*="bg-indigo-100"]::before,
+.icesi-workspace span[class*="bg-slate-100"]::before { content: '•'; }
+.icesi-workspace span.bg-rose-600 { background: transparent !important; padding: 0 !important; color: var(--palette-gold) !important; }
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--palette-white); }
 ::-webkit-scrollbar-thumb { background: var(--palette-blue); border-radius: 0; }

@@ -94,15 +94,8 @@ export const StudentWorkspace: React.FC<StudentWorkspaceProps> = ({
                 {project.code}
               </span>
               <span className="text-xs font-semibold text-slate-400">{project.companyName}</span>
-              <span
-                className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
-                  project.riskLevel === 'verde'
-                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                    : project.riskLevel === 'amarillo'
-                    ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                    : 'bg-rose-950 text-rose-300 border border-rose-800 animate-pulse'
-                }`}
-              >
+              <span className={`status-marker status-marker--${project.riskLevel === 'verde' ? 'green' : project.riskLevel === 'amarillo' ? 'amber' : 'red'}`}>
+                {project.riskLevel === 'verde' ? <CheckCircle2 className="h-3.5 w-3.5" /> : project.riskLevel === 'amarillo' ? <AlertTriangle className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
                 ESTADO: {project.riskLevel.toUpperCase()}
               </span>
             </div>
