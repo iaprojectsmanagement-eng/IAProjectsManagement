@@ -8,6 +8,8 @@ export interface Student {
   email: string;
   code?: string;
   projectId?: string | null;
+  /** A deactivated profile is retained for auditing, but is not assignable. */
+  isActive?: boolean;
 }
 
 export interface CompanyContact {

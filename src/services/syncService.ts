@@ -27,6 +27,7 @@ type Mutation =
   | { id: string; kind: 'upsert'; table: TableName; payload: Record<string, unknown>; createdAt: string }
   | { id: string; kind: 'delete'; table: TableName; recordId: string; createdAt: string }
   | { id: string; kind: 'replace_team'; projectId: string; emails: string[]; createdAt: string }
+  | { id: string; kind: 'set_profile_active'; studentId: string; isActive: boolean; createdAt: string }
   | { id: string; kind: 'accept_application'; applicationId: string; studentId: string; projectId: string; createdAt: string };
 
 export interface SyncState {
@@ -54,13 +55,14 @@ const mapProject = (row: any, profiles: any[]): Project => ({
   sharedFolderName: row.folder_name, progressStatus: row.progress_status || undefined, progressPct: row.progress_pct || 0,
   riskLevel: row.risk_level || 'verde', minStudents: row.min_students ?? 1, maxStudents: row.max_students ?? 5,
   contacts: Array.isArray(row.organization_contacts) ? row.organization_contacts : [],
-  assignedStudents: profiles.filter((profile) => profile.project_id === row.id && profile.role === 'student_group').map((profile): Student => ({ id: profile.id, name: profile.full_name, email: profile.email, code: profile.student_code, projectId: row.id })),
+  assignedStudents: profiles.filter((profile) => profile.project_id === row.id && profile.role === 'student_group' && profile.is_active !== false).map((profile): Student => ({ id: profile.id, name: profile.full_name, email: profile.email, code: profile.student_code, projectId: row.id, isActive: profile.is_active !== false })),
   assignedStudentsCount: row.assigned_students === undefined ? undefined : Number(row.assigned_students),
   aiType: row.ai_type || [], copImpactDescription: row.cop_impact_description || undefined, copImpactAnnual: row.cop_impact_annual ? Number(row.cop_impact_annual) : undefined,
   impactRating: row.impact_rating || undefined, complexityRating: row.complexity_rating || 5, aiRisks: row.ai_risks || undefined,
   requiredDatasets: row.required_datasets || undefined, dataQualityAvailability: row.data_quality_availability || undefined, techViability: row.tech_viability || undefined,
   githubUrl: row.github_url || undefined, driveFolderUrl: row.drive_folder_url || undefined, videoUrl: row.video_url || undefined, pptUrl: row.ppt_url || undefined,
-  finalReportUrl: row.final_report_url || undefined, baselineDocUrl: row.baseline_doc_url || undefined, lastActivityAt: iso(row.last_activity_at),
+  finalReportUrl: row.final_report_url || undefined, baselineDocUrl: row.baseline_doc_url || undefined,
+  resourceLinks: Array.isArray(row.resource_links) ? row.resource_links : [], lastActivityAt: iso(row.last_activity_at),
 });
 const mapTask = (row: any): ProjectTask => ({ id: row.id, projectId: row.project_id, title: row.title, description: row.description || undefined, assigneeName: row.assignee_name || 'Por asignar', assigneeEmail: row.assignee_email || undefined, dueDate: row.due_date || undefined, status: row.status, priority: row.priority, source: row.source, evidenceUrl: row.evidence_url || undefined, createdBy: row.created_by || undefined, completedBy: row.completed_by || undefined, completedAt: row.completed_at || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
 const mapIssue = (row: any): ProjectIssue => ({ id: row.id, projectId: row.project_id, title: row.title, description: row.description, category: row.category, priority: row.priority, status: row.status, reportedBy: row.reported_by_name || 'Usuario', reportedByEmail: row.reported_by_email || undefined, ownerName: row.owner_name || undefined, dueDate: row.due_date || undefined, resolution: row.resolution || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
@@ -111,7 +113,7 @@ const execute = async (mutation: Mutation) => {
     if (error) throw error;
   } else if (mutation.kind === 'replace_team') {
     const normalized = [...new Set(mutation.emails.map((email) => email.trim().toLowerCase()))];
-    const { data: profiles, error } = await supabaseClient.from('profiles').select('id,email,project_id,role').eq('role', 'student_group');
+    const { data: profiles, error } = await supabaseClient.from('profiles').select('id,email,project_id,role,is_active').eq('role', 'student_group').eq('is_active', true);
     if (error) throw error;
     const selected = (profiles || []).filter((profile) => normalized.includes(profile.email.toLowerCase()));
     if (selected.length !== normalized.length) throw new Error('El padrón remoto cambió; revisa el equipo antes de reintentar.');
@@ -123,6 +125,9 @@ const execute = async (mutation: Mutation) => {
       const { error: removeError } = await supabaseClient.rpc('remove_student_from_project', { target_student_id: profile.id, expected_project_id: mutation.projectId });
       if (removeError) throw removeError;
     }
+  } else if (mutation.kind === 'set_profile_active') {
+    const { error } = await supabaseClient.from('profiles').update({ is_active: mutation.isActive }).eq('id', mutation.studentId);
+    if (error) throw error;
   } else {
     const { error } = await supabaseClient.rpc('assign_student_to_project', { target_student_id: mutation.studentId, target_project_id: mutation.projectId });
     if (error) throw error;
@@ -158,7 +163,7 @@ export const SyncService = {
     emit({ status: 'loading', error: undefined });
     try {
       const results = await Promise.all([
-        supabaseClient.from('profiles').select('id,project_id,full_name,email,student_code,role'),
+        supabaseClient.from('profiles').select('id,project_id,full_name,email,student_code,role,is_active'),
         supabaseClient.from('projects').select('*,companies(name)'),
         supabaseClient.from('project_tasks').select('*'),
         supabaseClient.from('project_issues').select('*'),
@@ -174,7 +179,7 @@ export const SyncService = {
       if (firstError) throw firstError;
       const [profilesResult, projectsResult, tasksResult, issuesResult, meetingsResult, minutesResult, templatesResult, documentsResult, activityResult, applicationsResult, catalogResult] = results;
       const profiles = profilesResult.data || [];
-      cache(CACHE.students, profiles.filter((profile: any) => profile.role === 'student_group').map((profile: any): Student => ({ id: profile.id, name: profile.full_name, email: profile.email, code: profile.student_code, projectId: profile.project_id })));
+      cache(CACHE.students, profiles.filter((profile: any) => profile.role === 'student_group').map((profile: any): Student => ({ id: profile.id, name: profile.full_name, email: profile.email, code: profile.student_code, projectId: profile.project_id, isActive: profile.is_active !== false })));
       const projectRows = (projectsResult.data || []).length ? projectsResult.data || [] : catalogResult.data || [];
       cache(CACHE.projects, projectRows.map((row: any) => mapProject(row, profiles)));
       cache(CACHE.tasks, (tasksResult.data || []).map(mapTask)); cache(CACHE.issues, (issuesResult.data || []).map(mapIssue));
@@ -206,6 +211,11 @@ export const SyncService = {
     writeQueue([...readQueue(), { id: uuid(), kind: 'replace_team', projectId, emails, createdAt: new Date().toISOString() }]);
     void SyncService.flush();
   },
+  enqueueProfileActive: (studentId: string, isActive: boolean) => {
+    if (!remoteMode) return;
+    writeQueue([...readQueue(), { id: uuid(), kind: 'set_profile_active', studentId, isActive, createdAt: new Date().toISOString() }]);
+    void SyncService.flush();
+  },
   enqueueApplicationAcceptance: (applicationId: string, studentId: string, projectId: string) => {
     if (!remoteMode) return;
     writeQueue([...readQueue(), { id: uuid(), kind: 'accept_application', applicationId, studentId, projectId, createdAt: new Date().toISOString() }]);
@@ -228,7 +238,7 @@ export const SyncService = {
 };
 
 export const toDatabase = {
-  project: (project: Project) => ({ id: project.id, company_name: project.companyName, folder_name: project.code, title: project.title, challenge_description: project.challengeDescription || null, whatsapp_url: project.whatsappUrl || null, teams_meeting_url: project.teamsMeetingUrl || null, min_students: project.minStudents, max_students: project.maxStudents, progress_status: project.progressStatus || null, progress_pct: project.progressPct, risk_level: project.riskLevel, organization_contacts: project.contacts, ai_type: project.aiType, complexity_rating: project.complexityRating, github_url: project.githubUrl || null, drive_folder_url: project.driveFolderUrl || null, last_activity_at: project.lastActivityAt }),
+  project: (project: Project) => ({ id: project.id, company_name: project.companyName, folder_name: project.code, title: project.title, challenge_description: project.challengeDescription || null, whatsapp_url: project.whatsappUrl || null, teams_meeting_url: project.teamsMeetingUrl || null, min_students: project.minStudents, max_students: project.maxStudents, progress_status: project.progressStatus || null, progress_pct: project.progressPct, risk_level: project.riskLevel, organization_contacts: project.contacts, resource_links: project.resourceLinks || [], ai_type: project.aiType, complexity_rating: project.complexityRating, github_url: project.githubUrl || null, drive_folder_url: project.driveFolderUrl || null, last_activity_at: project.lastActivityAt }),
   task: (task: ProjectTask) => ({ id: task.id, project_id: task.projectId, title: task.title, description: task.description || null, assignee_name: task.assigneeName, due_date: task.dueDate || null, status: task.status, priority: task.priority, source: task.source, evidence_url: task.evidenceUrl || null, completed_by: task.completedBy || null, completed_at: task.completedAt || null }),
   issue: (issue: ProjectIssue) => ({ id: issue.id, project_id: issue.projectId, title: issue.title, description: issue.description, category: issue.category, priority: issue.priority, status: issue.status, due_date: issue.dueDate || null, resolution: issue.resolution || null }),
   meeting: (meeting: ProjectMeeting) => ({ id: meeting.id, project_id: meeting.projectId, title: meeting.title, starts_at: meeting.startsAt, duration_minutes: meeting.durationMinutes, attendees: meeting.attendees, agenda: meeting.agenda || null, timezone: meeting.timezone || 'America/Bogota', status: meeting.status, cancellation_reason: meeting.cancellationReason || null, calendar_sync_status: meeting.calendarSync, calendar_event_url: meeting.calendarEventUrl || null, minute_id: meeting.minuteId || null }),

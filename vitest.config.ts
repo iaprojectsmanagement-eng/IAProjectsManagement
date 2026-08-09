@@ -7,6 +7,6 @@ process.env.VITE_SUPABASE_ANON_KEY = '';
 
 export default defineConfig({
   test: {
-    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    exclude: ['e2e/**', '.release-repo/**', 'node_modules/**', 'dist/**'],
   },
 });
