@@ -10,8 +10,10 @@ const projectName = (projects: Project[], projectId: string) => projects.find((p
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>{children}</section>;
 const SectionHeading: React.FC<{ title: string; description?: string; action?: React.ReactNode }> = ({ title, description, action }) => <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-black tracking-tight text-slate-900">{title}</h1>{description && <p className="mt-1 text-sm text-slate-500">{description}</p>}</div>{action}</div>;
 const Pill: React.FC<{ children: React.ReactNode; tone?: 'neutral' | 'red' | 'amber' | 'green' | 'indigo' }> = ({ children, tone = 'neutral' }) => {
-  const Icon = tone === 'red' ? CircleAlert : tone === 'amber' ? Clock3 : tone === 'green' ? Check : tone === 'indigo' ? Info : CircleDot;
-  return <span className={`status-marker status-marker--${tone}`}><Icon className="h-3 w-3" aria-hidden="true" />{children}</span>;
+  const label = typeof children === 'string' ? children.toLowerCase() : '';
+  const markerTone = label.includes('alta') || label.includes('crit') || label.includes('vencid') || label.includes('acta') ? 'red' as const : tone;
+  const Icon = markerTone === 'red' ? CircleAlert : markerTone === 'amber' ? Clock3 : markerTone === 'green' ? Check : markerTone === 'indigo' ? Info : CircleDot;
+  return <span className={`status-marker status-marker--${markerTone}`}><Icon className="h-3 w-3" aria-hidden="true" />{children}</span>;
 };
 const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 'primary' | 'secondary' | 'danger' }> = ({ children, tone = 'primary', className = '', ...props }) => <button {...props} className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${tone === 'primary' ? 'bg-[#514ff0] text-white hover:bg-[#403dc9]' : tone === 'danger' ? 'bg-rose-600 text-white hover:bg-rose-700' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'} ${className}`}>{children}</button>;
 

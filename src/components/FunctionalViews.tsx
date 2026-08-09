@@ -91,8 +91,10 @@ const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 
 );
 
 const Badge: React.FC<{ children: React.ReactNode; tone?: 'red' | 'amber' | 'green' | 'indigo' | 'slate' }> = ({ children, tone = 'slate' }) => {
-  const Icon = tone === 'red' ? AlertTriangle : tone === 'amber' ? Clock3 : tone === 'green' ? Check : tone === 'indigo' ? Info : CircleDot;
-  return <span className={`status-marker status-marker--${tone}`}><Icon className="h-3 w-3" aria-hidden="true" />{children}</span>;
+  const label = typeof children === 'string' ? children.toLowerCase() : '';
+  const markerTone = label.includes('alta') || label.includes('crit') || label.includes('vencid') || label.includes('acta') ? 'red' as const : tone;
+  const Icon = markerTone === 'red' ? AlertTriangle : markerTone === 'amber' ? Clock3 : markerTone === 'green' ? Check : markerTone === 'indigo' ? Info : CircleDot;
+  return <span className={`status-marker status-marker--${markerTone}`}><Icon className="h-3 w-3" aria-hidden="true" />{children}</span>;
 };
 
 const RiskFilter: React.FC<{ value: string; onChange: (value: string) => void }> = ({ value, onChange }) => {
