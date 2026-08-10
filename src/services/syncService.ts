@@ -127,7 +127,7 @@ const execute = async (mutation: Mutation) => {
     if (error) throw error;
   } else if (mutation.kind === 'replace_team') {
     const normalized = [...new Set(mutation.emails.map((email) => email.trim().toLowerCase()))];
-    const { data: profiles, error } = await supabaseClient.from('profiles').select('id,email,project_id,role,is_active').eq('role', 'student_group').eq('is_active', true);
+    const { data: profiles, error } = await supabaseClient.from('profiles').select('id,email,project_id,role').eq('role', 'student_group');
     if (error) throw error;
     const selected = (profiles || []).filter((profile) => normalized.includes(profile.email.toLowerCase()));
     if (selected.length !== normalized.length) throw new Error('El padrón remoto cambió; revisa el equipo antes de reintentar.');
@@ -178,7 +178,7 @@ export const SyncService = {
     emit({ status: 'loading', error: undefined });
     try {
       const results = await Promise.all([
-        supabaseClient.from('profiles').select('id,project_id,full_name,email,student_code,role,is_active'),
+        supabaseClient.from('profiles').select('id,project_id,full_name,email,student_code,role'),
         supabaseClient.from('projects').select('*,companies(name)'),
         supabaseClient.from('project_tasks').select('*'),
         supabaseClient.from('project_issues').select('*'),
@@ -190,12 +190,15 @@ export const SyncService = {
         supabaseClient.from('project_applications').select('*'),
         supabaseClient.rpc('list_available_projects'),
       ]);
-      const firstError = results.find((result) => result.error)?.error;
+      // `list_available_projects` is only a student catalog enhancement. It
+      // must not prevent monitors from loading if the optional RPC migration
+      // has not been applied yet.
+      const firstError = results.slice(0, -1).find((result) => result.error)?.error;
       if (firstError) throw firstError;
       const [profilesResult, projectsResult, tasksResult, issuesResult, meetingsResult, minutesResult, templatesResult, documentsResult, activityResult, applicationsResult, catalogResult] = results;
       const profiles = profilesResult.data || [];
       cache(CACHE.students, profiles.filter((profile: any) => profile.role === 'student_group').map((profile: any): Student => ({ id: profile.id, name: profile.full_name, email: profile.email, code: profile.student_code, projectId: profile.project_id, isActive: profile.is_active !== false })));
-      const projectRows = (projectsResult.data || []).length ? projectsResult.data || [] : catalogResult.data || [];
+      const projectRows = (projectsResult.data || []).length ? projectsResult.data || [] : (catalogResult.error ? [] : catalogResult.data || []);
       cache(CACHE.projects, projectRows.map((row: any) => mapProject(row, profiles)));
       cache(CACHE.tasks, (tasksResult.data || []).map(mapTask)); cache(CACHE.issues, (issuesResult.data || []).map(mapIssue));
       cache(CACHE.meetings, (meetingsResult.data || []).map(mapMeeting)); cache(CACHE.minutes, (minutesResult.data || []).map(mapMinute));
@@ -206,7 +209,8 @@ export const SyncService = {
       await SyncService.flush();
       return state;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudieron cargar los datos remotos.';
+      const detail = typeof error === 'object' && error && 'message' in error ? String(error.message) : undefined;
+      const message = error instanceof Error ? error.message : detail || 'No se pudieron cargar los datos remotos.';
       emit({ status: 'error', error: message });
       throw new Error(message);
     }

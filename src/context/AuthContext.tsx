@@ -18,8 +18,9 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const localDemoEnabled = import.meta.env.VITE_DATA_MODE === 'local'
-  && (import.meta.env.DEV || import.meta.env.VITE_ALLOW_LOCAL_DEMO === 'true');
+// The local role switch exists exclusively for automated tests. All normal
+// development and deployed builds authenticate through Supabase.
+const localDemoEnabled = import.meta.env.VITE_TEST_MODE === 'true';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>(localDemoEnabled ? 'superuser' : 'student_group');
@@ -35,13 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user || !supabaseClient) {
       setIsAuthenticated(false); setUserId(''); setUserEmail(''); setUserName(''); setAssignedProjectId(null); setIsLoading(false); return;
     }
-    const { data: profile, error } = await supabaseClient.from('profiles').select('full_name,email,student_code,role,project_id,is_active').eq('id', user.id).single();
+    const { data: profile, error } = await supabaseClient.from('profiles').select('full_name,email,student_code,role,project_id').eq('id', user.id).single();
     if (error) console.warn('No se pudo cargar el perfil de Supabase.', error.message);
-    if (profile?.is_active === false) {
-      await supabaseClient.auth.signOut();
-      setIsAuthenticated(false); setIsLoading(false);
-      return;
-    }
     const nextRole = profile?.role;
     setRole(nextRole === 'superuser' || nextRole === 'company_contact' ? nextRole : 'student_group');
     setUserId(user.id);
