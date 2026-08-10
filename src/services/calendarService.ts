@@ -8,6 +8,8 @@ interface CalendarResult {
   meetingId: string;
   eventUrl?: string;
   message?: string;
+  error?: string;
+  googleStatus?: number;
 }
 
 export const CalendarService = {
@@ -29,7 +31,13 @@ export const CalendarService = {
     const { data, error } = await supabaseClient.functions.invoke<CalendarResult>('sync-google-calendar', {
       body: { meetingId, action },
     });
-    if (error) throw error;
+    if (error) {
+      const response = error.context;
+      const failure = response instanceof Response
+        ? await response.json().catch(() => null) as Pick<CalendarResult, 'error'> | null
+        : null;
+      throw new Error(failure?.error || 'No fue posible sincronizar la reunión con Google Calendar.');
+    }
     if (!data) throw new Error('Calendar no devolvió una respuesta válida.');
 
     const meeting = OperationsService.updateMeeting(meetingId, {
