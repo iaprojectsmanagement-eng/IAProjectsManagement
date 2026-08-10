@@ -80,7 +80,7 @@ serve(async (request) => {
     if (!meetingId || !["upsert", "cancel"].includes(action)) return json({ error: "meetingId y una acción válida son obligatorios" }, 400);
     const { data: meeting, error } = await supabase.from("project_meetings").select("*, projects(title)").eq("id", meetingId).single();
     if (error || !meeting) return json({ error: "Reunión no encontrada o sin acceso" }, 404);
-    const accessToken = Deno.env.get("GOOGLE_CALENDAR_ACCESS_TOKEN");
+    const accessToken = Deno.env.get("GOOGLE_CALENDAR_ACCESS_TOKEN") || await refreshGoogleAccessToken();
     if (!accessToken) {
       await supabase.from("project_meetings").update({ calendar_sync_status: "simulado" }).eq("id", meetingId);
       return json({ mode: "simulado", action, meetingId, message: "Configura OAuth de Google Calendar para sincronizar eventos reales." });
