@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { OperationsService } from './operationsService';
 import { AuditService } from './auditService';
 import { DataService } from './supabase';
+import { toDatabase } from './syncService';
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -37,6 +38,12 @@ describe('operations service', () => {
     const project = OperationsService.getProjects()[0];
     const meeting = OperationsService.createMeeting({ projectId: project.id, title: 'Cierre', startsAt: '2026-08-20T10:00:00', durationMinutes: 45, attendees: [], timezone: 'America/Bogota', status: 'realizada' });
     expect(() => OperationsService.updateMeetingStatus(meeting.id, 'cancelada', 'Cambio tardío')).toThrow(/No se puede cambiar/);
+  });
+
+  it('persists Bogotá meeting time with its UTC-5 offset', () => {
+    const project = OperationsService.getProjects()[0];
+    const meeting = OperationsService.createMeeting({ projectId: project.id, title: 'Hora local', startsAt: '2026-08-20T15:00:00', durationMinutes: 45, attendees: [], timezone: 'America/Bogota', status: 'programada' });
+    expect(toDatabase.meeting(meeting).starts_at).toBe('2026-08-20T15:00:00-05:00');
   });
 
   it('links a generated minute to its meeting and creates only non-empty commitments', () => {
