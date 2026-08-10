@@ -57,8 +57,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     if (!supabaseClient) throw new Error('Supabase no está configurado en este entorno.');
-    setIsLoading(true);
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const suppliedCode = password.trim();
+    const normalizedPassword = /^[aA]\d+$/.test(suppliedCode) ? `A${suppliedCode.slice(1)}` : password;
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email.trim(), password: normalizedPassword });
     if (error) { setIsLoading(false); throw new Error(error.message); }
     await loadUser(data.user);
   };

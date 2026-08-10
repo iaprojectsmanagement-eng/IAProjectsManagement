@@ -41,6 +41,7 @@ export interface SyncState {
 
 let state: SyncState = { mode: remoteMode ? 'supabase' : 'local', status: 'idle', pending: 0 };
 let flushing = false;
+let flushPromise: Promise<void> | null = null;
 let legacyCacheCleared = false;
 let realtimeTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<(next: SyncState) => void>();
@@ -241,18 +242,25 @@ export const SyncService = {
     void SyncService.flush();
   },
   flush: async () => {
-    if (!remoteMode || flushing || !supabaseClient) return;
-    flushing = true;
-    try {
-      let queue = readQueue();
-      while (queue.length) {
-        await execute(queue[0]);
-        queue = queue.slice(1); writeQueue(queue);
+    if (!remoteMode || !supabaseClient) return;
+    if (flushPromise) return flushPromise;
+    flushPromise = (async () => {
+      flushing = true;
+      try {
+        let queue = readQueue();
+        while (queue.length) {
+          await execute(queue[0]);
+          queue = queue.slice(1); writeQueue(queue);
+        }
+        emit({ status: 'synced', pending: 0, lastSyncedAt: new Date().toISOString(), error: undefined });
+      } catch (error) {
+        emit({ status: 'error', pending: readQueue().length, error: error instanceof Error ? error.message : 'Falló la sincronización.' });
+      } finally {
+        flushing = false;
+        flushPromise = null;
       }
-      emit({ status: 'synced', pending: 0, lastSyncedAt: new Date().toISOString(), error: undefined });
-    } catch (error) {
-      emit({ status: 'error', pending: readQueue().length, error: error instanceof Error ? error.message : 'Falló la sincronización.' });
-    } finally { flushing = false; }
+    })();
+    return flushPromise;
   },
 };
 

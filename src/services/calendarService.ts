@@ -18,10 +18,13 @@ export const CalendarService = {
     }
 
     await SyncService.flush();
-    const syncState = SyncService.getState();
-    if (syncState.pending || syncState.status === 'error') {
-      throw new Error(syncState.error || 'La reunión aún no se ha guardado en Supabase.');
-    }
+    const { data: persistedMeeting, error: persistenceError } = await supabaseClient
+      .from('project_meetings')
+      .select('id')
+      .eq('id', meetingId)
+      .maybeSingle();
+    if (persistenceError) throw new Error('No fue posible verificar el guardado de la reunión en Supabase.');
+    if (!persistedMeeting) throw new Error('La reunión no pudo guardarse en Supabase. Revisa la conexión e inténtalo de nuevo.');
 
     const { data, error } = await supabaseClient.functions.invoke<CalendarResult>('sync-google-calendar', {
       body: { meetingId, action },
