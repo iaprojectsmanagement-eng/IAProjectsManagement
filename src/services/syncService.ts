@@ -54,7 +54,7 @@ const LEGACY_LOCAL_KEYS = [
   'ia_hub_deliverables', 'ia_hub_alerts', 'ia_hub_messages', 'ia_hub_operation_tasks',
   'ia_hub_operation_issues', 'ia_hub_operation_meetings', 'ia_hub_operation_documents',
   'ia_hub_operation_activity', 'ia_hub_operation_templates', 'ia_hub_private_files',
-  'ia_hub_audit_events', OUTBOX_KEY,
+  'ia_hub_audit_events',
 ];
 const clearLegacyLocalCache = () => {
   if (legacyCacheCleared) return;
@@ -163,7 +163,10 @@ export const SyncService = {
       .on('postgres_changes', { event: '*', schema: 'public' }, () => {
         if (realtimeTimer) clearTimeout(realtimeTimer);
         realtimeTimer = setTimeout(() => {
-          void SyncService.bootstrap().then(onHydrated).catch(() => undefined);
+          void SyncService.flush()
+            .then(() => SyncService.bootstrap())
+            .then(onHydrated)
+            .catch(() => undefined);
         }, 350);
       })
       .subscribe();
@@ -178,6 +181,7 @@ export const SyncService = {
     clearLegacyLocalCache();
     emit({ status: 'loading', error: undefined });
     try {
+      await SyncService.flush();
       const results = await Promise.all([
         supabaseClient.from('profiles').select('id,project_id,full_name,email,student_code,role'),
         supabaseClient.from('projects').select('*,companies(name)'),
@@ -207,7 +211,6 @@ export const SyncService = {
       cache(CACHE.activity, (activityResult.data || []).map(mapActivity));
       cache(CACHE.applications, (applicationsResult.data || []).map((row: any): Application => ({ id: row.id, projectId: row.project_id, studentId: row.student_id, studentName: profiles.find((profile: any) => profile.id === row.student_id)?.full_name || 'Estudiante', studentEmail: profiles.find((profile: any) => profile.id === row.student_id)?.email || '', status: row.status, createdAt: iso(row.created_at) })));
       emit({ status: 'synced', pending: readQueue().length, lastSyncedAt: new Date().toISOString(), error: undefined });
-      await SyncService.flush();
       return state;
     } catch (error) {
       const detail = typeof error === 'object' && error && 'message' in error ? String(error.message) : undefined;
@@ -219,27 +222,27 @@ export const SyncService = {
   enqueueUpsert: (table: TableName, payload: Record<string, unknown>) => {
     if (!remoteMode) return;
     writeQueue([...readQueue(), { id: uuid(), kind: 'upsert', table, payload, createdAt: new Date().toISOString() }]);
-    void SyncService.flush();
+    void SyncService.flush().catch(() => undefined);
   },
   enqueueDelete: (table: TableName, recordId: string) => {
     if (!remoteMode) return;
     writeQueue([...readQueue(), { id: uuid(), kind: 'delete', table, recordId, createdAt: new Date().toISOString() }]);
-    void SyncService.flush();
+    void SyncService.flush().catch(() => undefined);
   },
   enqueueTeamReplacement: (projectId: string, emails: string[]) => {
     if (!remoteMode) return;
     writeQueue([...readQueue(), { id: uuid(), kind: 'replace_team', projectId, emails, createdAt: new Date().toISOString() }]);
-    void SyncService.flush();
+    void SyncService.flush().catch(() => undefined);
   },
   enqueueProfileActive: (studentId: string, isActive: boolean) => {
     if (!remoteMode) return;
     writeQueue([...readQueue(), { id: uuid(), kind: 'set_profile_active', studentId, isActive, createdAt: new Date().toISOString() }]);
-    void SyncService.flush();
+    void SyncService.flush().catch(() => undefined);
   },
   enqueueApplicationAcceptance: (applicationId: string, studentId: string, projectId: string) => {
     if (!remoteMode) return;
     writeQueue([...readQueue(), { id: uuid(), kind: 'accept_application', applicationId, studentId, projectId, createdAt: new Date().toISOString() }]);
-    void SyncService.flush();
+    void SyncService.flush().catch(() => undefined);
   },
   flush: async () => {
     if (!remoteMode || !supabaseClient) return;
@@ -247,14 +250,18 @@ export const SyncService = {
     flushPromise = (async () => {
       flushing = true;
       try {
-        let queue = readQueue();
-        while (queue.length) {
-          await execute(queue[0]);
-          queue = queue.slice(1); writeQueue(queue);
+        while (true) {
+          const mutation = readQueue()[0];
+          if (!mutation) break;
+          await execute(mutation);
+          // Keep entries queued while an earlier write is in flight. Removing a
+          // stale in-memory queue here used to discard newly-created meetings.
+          writeQueue(readQueue().filter((item) => item.id !== mutation.id));
         }
         emit({ status: 'synced', pending: 0, lastSyncedAt: new Date().toISOString(), error: undefined });
       } catch (error) {
         emit({ status: 'error', pending: readQueue().length, error: error instanceof Error ? error.message : 'Falló la sincronización.' });
+        throw error;
       } finally {
         flushing = false;
         flushPromise = null;
