@@ -31,13 +31,7 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Complete `.env.local` con la URL y la clave publicable de Supabase. Para ejecutar la demostración local aislada de Supabase:
-
-```bash
-npm run dev:demo
-```
-
-El modo demo está deshabilitado en producción mediante `render.yaml`.
+Complete `.env.local` con la URL y la clave publicable de Supabase. La aplicación no incluye un catálogo ni registros ficticios: cada inicio carga únicamente la información autorizada de Supabase.
 
 ## Verificación
 

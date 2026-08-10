@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'vite';
 
 process.env.VITE_DATA_MODE = 'local';
+process.env.VITE_TEST_MODE = 'true';
 process.env.VITE_ALLOW_LOCAL_DEMO = 'true';
 
 const server = await createServer({

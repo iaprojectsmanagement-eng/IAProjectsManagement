@@ -20,12 +20,6 @@ export const DEFAULT_TEMPLATES: DocumentTemplate[] = INSTITUTIONAL_TEMPLATES;
 // Backwards-compatible export for the retired views that remain in the repository.
 export const DOCUMENT_TEMPLATES = DEFAULT_TEMPLATES;
 
-const demoStudents: Student[] = [
-  { id: 'student-demo-b', name: 'Bruno Rojas', email: 'bruno.rojas@u.icesi.edu.co', code: '2201002' },
-  { id: 'student-demo-c', name: 'Carolina Melo', email: 'carolina.melo@u.icesi.edu.co', code: '2201003' },
-  { id: 'student-demo-d', name: 'Daniela Ruiz', email: 'daniela.ruiz@u.icesi.edu.co', code: '2201004' }
-];
-
 const addActivity = (projectId: string, type: ActivityItem['type'], message: string) => {
   const items = read<ActivityItem[]>(KEYS.activity, []);
   const activity = { id: id('activity'), projectId, type, message, createdAt: new Date().toISOString() } satisfies ActivityItem;
@@ -36,6 +30,9 @@ const addActivity = (projectId: string, type: ActivityItem['type'], message: str
 };
 
 const seed = () => {
+  // The former local demonstration records are intentionally disabled.
+  // Supabase hydration is now the only source of operational records.
+  return;
   const [first, second, third] = DataService.getProjects();
   if (!first) return;
   const now = new Date().toISOString();
@@ -67,11 +64,11 @@ const renderDocument = (template: DocumentTemplate, project: Project, tasks: Pro
 };
 
 export const OperationsService = {
-  initialise: seed,
+  initialise: () => undefined,
   getProjects: (): Project[] => DataService.getProjects(),
   getStudents: (): Student[] => {
     const map = new Map<string, Student>();
-    [...DataService.getStudents(), ...DataService.getProjects().flatMap((project) => project.assignedStudents), ...(SyncService.isRemoteMode() ? [] : demoStudents)].forEach((student) => map.set(student.email.toLowerCase(), student));
+    [...DataService.getStudents(), ...DataService.getProjects().flatMap((project) => project.assignedStudents)].forEach((student) => map.set(student.email.toLowerCase(), student));
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
   },
   createProject: (data: { code: string; companyName: string; title: string; challengeDescription?: string; maxStudents: number }) => { const projects = DataService.addProject({ ...data, progressPct: 0, riskLevel: 'verde', minStudents: 1, contacts: [], assignedStudents: [], aiType: [], complexityRating: 5 }); const project = projects[0]; SyncService.enqueueUpsert('projects', toDatabase.project(project)); AuditService.record({ projectId: project.id, entityType: 'project', entityId: project.id, action: 'create', afterData: project }); return projects; },

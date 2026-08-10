@@ -2,7 +2,17 @@ import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('ia_hub_projects', JSON.stringify([{
+      id: 'e2e-project-1', code: 'E2E-1', companyName: 'Organización E2E',
+      title: 'Clasificación de solicitudes de servicio', progressPct: 0, riskLevel: 'verde',
+      minStudents: 1, maxStudents: 5, contacts: [], aiType: [], complexityRating: 5,
+      lastActivityAt: '2026-08-01T00:00:00.000Z', assignedStudents: [{
+        id: 'student-demo-a', name: 'Ángela González', email: 'angela6309gonzalez@gmail.com', code: '2201001', projectId: 'e2e-project-1',
+      }],
+    }]));
+  });
   await page.reload();
 });
 

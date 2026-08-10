@@ -1,5 +1,4 @@
 import { Project, Student, Application, MeetingMinute, Deliverable, AlertItem, ChatMessage } from '../types';
-import { INITIAL_PROJECTS } from '../data/seedProjects';
 import Papa from 'papaparse';
 import { assignStudentsExclusively, canAcceptStudent, normaliseEmail } from './projectRules';
 
@@ -33,7 +32,7 @@ const setStoredData = <T>(key: string, data: T): void => {
 export const DataService = {
   // --- Projects CRUD ---
   getProjects: (): Project[] => {
-    return getStoredData<Project[]>(STORAGE_KEYS.PROJECTS, INITIAL_PROJECTS);
+    return getStoredData<Project[]>(STORAGE_KEYS.PROJECTS, []);
   },
 
   saveProjects: (projects: Project[]): void => {

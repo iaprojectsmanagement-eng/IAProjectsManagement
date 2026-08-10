@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_ENABLE_DEMO_ROLE_SWITCH?: string;
   readonly VITE_ALLOW_LOCAL_DEMO?: string;
   readonly VITE_DATA_MODE?: 'local' | 'supabase';
+  readonly VITE_TEST_MODE?: string;
   readonly DEV: boolean;
 }
 

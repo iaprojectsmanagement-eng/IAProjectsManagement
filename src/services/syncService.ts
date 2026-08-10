@@ -19,8 +19,9 @@ const CACHE = {
   templates: 'ia_hub_operation_templates', documents: 'ia_hub_operation_documents', activity: 'ia_hub_operation_activity',
 };
 const OUTBOX_KEY = 'ia_hub_sync_outbox';
-const requestedMode = import.meta.env.VITE_DATA_MODE;
-const remoteMode = requestedMode === 'supabase' || (!requestedMode && Boolean(supabaseClient) && !import.meta.env.DEV);
+// Supabase is the only source of truth. The local adapter exists exclusively
+// inside the automated test runner, never as an application runtime option.
+const remoteMode = import.meta.env.VITE_TEST_MODE !== 'true';
 
 type TableName = 'projects' | 'project_tasks' | 'project_issues' | 'project_meetings' | 'meeting_minutes' | 'document_templates' | 'project_documents' | 'project_activity' | 'project_applications' | 'audit_log';
 type Mutation =
@@ -40,12 +41,25 @@ export interface SyncState {
 
 let state: SyncState = { mode: remoteMode ? 'supabase' : 'local', status: 'idle', pending: 0 };
 let flushing = false;
+let legacyCacheCleared = false;
 let realtimeTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<(next: SyncState) => void>();
 const emit = (patch: Partial<SyncState>) => { state = { ...state, ...patch }; listeners.forEach((listener) => listener(state)); };
 const readQueue = (): Mutation[] => { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); } catch { return []; } };
 const writeQueue = (items: Mutation[]) => { localStorage.setItem(OUTBOX_KEY, JSON.stringify(items)); emit({ pending: items.length, status: items.length ? 'pending' : 'synced' }); };
 const cache = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
+const LEGACY_LOCAL_KEYS = [
+  'ia_hub_projects', 'ia_hub_students', 'ia_hub_applications', 'ia_hub_minutes',
+  'ia_hub_deliverables', 'ia_hub_alerts', 'ia_hub_messages', 'ia_hub_operation_tasks',
+  'ia_hub_operation_issues', 'ia_hub_operation_meetings', 'ia_hub_operation_documents',
+  'ia_hub_operation_activity', 'ia_hub_operation_templates', 'ia_hub_private_files',
+  'ia_hub_audit_events', OUTBOX_KEY,
+];
+const clearLegacyLocalCache = () => {
+  if (legacyCacheCleared) return;
+  LEGACY_LOCAL_KEYS.forEach((key) => localStorage.removeItem(key));
+  legacyCacheCleared = true;
+};
 const uuid = () => crypto.randomUUID();
 const iso = (value?: string | null) => value || new Date().toISOString();
 
@@ -160,6 +174,7 @@ export const SyncService = {
   bootstrap: async () => {
     if (!remoteMode) { emit({ mode: 'local', status: 'synced', pending: 0, lastSyncedAt: new Date().toISOString() }); return state; }
     if (!supabaseClient) throw new Error('VITE_DATA_MODE=supabase requiere URL y clave de Supabase.');
+    clearLegacyLocalCache();
     emit({ status: 'loading', error: undefined });
     try {
       const results = await Promise.all([

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { OperationsService } from './operationsService';
 import { AuditService } from './auditService';
+import { DataService } from './supabase';
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -15,6 +16,10 @@ class MemoryStorage implements Storage {
 beforeEach(() => {
   Object.defineProperty(globalThis, 'localStorage', { value: new MemoryStorage(), configurable: true });
   OperationsService.initialise();
+  DataService.saveProjects([
+    { id: 'test-project-1', code: 'TEST-1', companyName: 'Organización de prueba', title: 'Proyecto de prueba uno', progressPct: 0, riskLevel: 'verde', minStudents: 1, maxStudents: 5, contacts: [], assignedStudents: [], aiType: [], complexityRating: 5, lastActivityAt: '2026-08-01T00:00:00.000Z' },
+    { id: 'test-project-2', code: 'TEST-2', companyName: 'Organización de prueba', title: 'Proyecto de prueba dos', progressPct: 0, riskLevel: 'verde', minStudents: 1, maxStudents: 5, contacts: [], assignedStudents: [], aiType: [], complexityRating: 5, lastActivityAt: '2026-08-01T00:00:00.000Z' },
+  ]);
 });
 
 describe('operations service', () => {

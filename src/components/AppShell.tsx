@@ -50,7 +50,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, page, role, userNa
         <main className="icesi-main-surface min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
       <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-start gap-1 overflow-x-auto border-t border-slate-200 bg-white px-2 py-2 lg:hidden">{items.map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => onNavigate(item.id)} className={`grid min-w-[70px] place-items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold ${page === item.id ? 'text-[#514ff0]' : 'text-slate-500'}`}><Icon className="h-4 w-4" /><span>{isMonitor ? item.label : studentLabels[item.id] || item.label}</span></button>; })}</nav>
-      <footer className="hidden border-t border-slate-200 bg-white py-5 text-center text-[11px] text-slate-500 lg:block">Project Hub · entorno de demostración con integraciones simuladas</footer>
     </div>
   );
 };
