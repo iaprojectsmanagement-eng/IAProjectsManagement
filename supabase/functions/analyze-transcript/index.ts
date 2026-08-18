@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { claimAIQuota, finishAIQuota, openAIConfigured, requestOpenAIJson } from "../_shared/openai.ts";
+import { claimAIQuota, finishAIQuota, openAIConfigured, OPENAI_MODEL, requestOpenAIJson } from "../_shared/openai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,7 +53,7 @@ serve(async (request) => {
     let provider: "openai" | "gemini";
 
     if (openAIConfigured()) {
-      const model = Deno.env.get("OPENAI_MODEL") || "gpt-5-nano";
+      const model = OPENAI_MODEL;
       const requestId = await claimAIQuota(supabase, projectId, "transcript", model, rawText.length);
       try {
         const result = await requestOpenAIJson<Analysis>({

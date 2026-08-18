@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { claimAIQuota, finishAIQuota, openAIConfigured, requestOpenAIJson } from './openai.ts';
+import { claimAIQuota, finishAIQuota, openAIConfigured, OPENAI_MODEL, requestOpenAIJson } from './openai.ts';
 
 export type DocumentType = 'contexto_proyecto' | 'plan_actividades' | 'acta_reunion' | 'reporte_entregables';
 
@@ -162,7 +162,7 @@ export const handleDocumentGeneration = async (request: Request, config: Documen
     let model: string | null = null;
     if (openAIConfigured()) {
       const detached = detachEmbeddedImages(templateHtml);
-      model = Deno.env.get('OPENAI_MODEL') || 'gpt-5-nano';
+      model = OPENAI_MODEL;
       const promptPayload = JSON.stringify({
         documentType: config.documentType,
         projectContext: snapshot,
@@ -240,7 +240,7 @@ export const handleDocumentRevision = async (request: Request) => {
     if (document.status === 'aprobado') return json({ error: 'Un documento aprobado está bloqueado. El monitor debe devolverlo a revisión.' }, 409);
 
     const detached = detachEmbeddedImages(String(document.html_content));
-    const model = Deno.env.get('OPENAI_MODEL') || 'gpt-5-nano';
+    const model = OPENAI_MODEL;
     const promptPayload = JSON.stringify({ documentType: document.document_type, requestedChange: changeRequest, currentHtml: detached.promptHtml });
     const requestId = await claimAIQuota(supabase, document.project_id, 'document', model, promptPayload.length);
     try {

@@ -12,12 +12,14 @@ interface JsonRequest {
   maxOutputTokens: number;
 }
 
-export const openAIConfigured = () => Boolean(Deno.env.get("OPENAI_API_KEY"));
+export const OPENAI_MODEL = "gpt-5.6-luna";
+export const openAIConfigured = () => Boolean(Deno.env.get("OPENAI_API_KEY")?.trim());
 
 export const requestOpenAIJson = async <T>({ name, schema, instructions, input, maxOutputTokens }: JsonRequest): Promise<OpenAIJsonResult<T>> => {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_NOT_CONFIGURED");
-  const model = Deno.env.get("OPENAI_MODEL") || "gpt-5-nano";
+  // This deployment is intentionally locked to one approved model.
+  const model = OPENAI_MODEL;
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -25,7 +27,7 @@ export const requestOpenAIJson = async <T>({ name, schema, instructions, input, 
       model,
       instructions,
       input,
-      reasoning: { effort: "low" },
+      reasoning: { effort: "medium" },
       max_output_tokens: maxOutputTokens,
       store: false,
       text: { format: { type: "json_schema", name, strict: true, schema } },

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { claimAIQuota, finishAIQuota, openAIConfigured, requestOpenAIJson } from "../_shared/openai.ts";
+import { claimAIQuota, finishAIQuota, openAIConfigured, OPENAI_MODEL, requestOpenAIJson } from "../_shared/openai.ts";
 
 const headers = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
@@ -41,7 +41,7 @@ serve(async (request) => {
     let provider = "plantilla";
 
     if (openAIConfigured()) {
-      const model = Deno.env.get("OPENAI_MODEL") || "gpt-5-nano";
+      const model = OPENAI_MODEL;
       const source = html.slice(0, 20_000);
       const requestId = await claimAIQuota(supabase, projectId, "document", model, source.length);
       try {
