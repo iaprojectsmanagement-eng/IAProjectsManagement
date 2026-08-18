@@ -46,8 +46,8 @@ describe('operations service', () => {
     const cancelled = OperationsService.updateMeetingStatus(meeting.id, 'cancelada');
     expect(cancelled?.status).toBe('cancelada');
     expect(cancelled?.cancellationReason).toBeUndefined();
-    expect(toDatabase.meeting(cancelled!).meeting_url).toBe('https://teams.example.test/meeting');
-    expect(toDatabase.meeting(cancelled!).meeting_password).toBe('clave-equipo');
+    expect(toDatabase.meeting(cancelled!)).not.toHaveProperty('meeting_url');
+    expect(toDatabase.meeting(cancelled!)).not.toHaveProperty('meeting_password');
   });
 
   it('persists Bogotá meeting time with its UTC-5 offset', () => {

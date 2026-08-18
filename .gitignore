@@ -8,5 +8,6 @@ playwright-report/
 test-results/
 graphify-out/
 tmp/
+supabase/.temp/
 .release-repo/
 *.log

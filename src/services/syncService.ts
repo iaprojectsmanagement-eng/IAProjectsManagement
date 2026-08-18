@@ -51,7 +51,21 @@ let legacyCacheCleared = false;
 let realtimeTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<(next: SyncState) => void>();
 const emit = (patch: Partial<SyncState>) => { state = { ...state, ...patch }; listeners.forEach((listener) => listener(state)); };
-const readQueue = (): Mutation[] => { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); } catch { return []; } };
+const sanitizeQueuedMutation = (mutation: Mutation): Mutation => {
+  // Do not let an outbox entry created by a newer client block login while the
+  // hosted database is still awaiting the matching schema migration.
+  if (mutation.kind === 'upsert' && mutation.table === 'project_meetings' && ('meeting_password' in mutation.payload || 'meeting_url' in mutation.payload)) {
+    const { meeting_password: _meetingPassword, meeting_url: _meetingUrl, ...payload } = mutation.payload;
+    return { ...mutation, payload };
+  }
+  return mutation;
+};
+const readQueue = (): Mutation[] => {
+  try {
+    const queued = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]') as Mutation[];
+    return Array.isArray(queued) ? queued.map(sanitizeQueuedMutation) : [];
+  } catch { return []; }
+};
 const writeQueue = (items: Mutation[]) => { localStorage.setItem(OUTBOX_KEY, JSON.stringify(items)); emit({ pending: items.length, status: items.length ? 'pending' : 'synced' }); };
 const cache = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
 const LEGACY_LOCAL_KEYS = [
@@ -315,7 +329,7 @@ export const toDatabase = {
   project: (project: Project) => ({ id: project.id, company_name: project.companyName, folder_name: project.code, title: project.title, challenge_description: project.challengeDescription || null, whatsapp_url: project.whatsappUrl || null, teams_meeting_url: project.teamsMeetingUrl || null, min_students: project.minStudents, max_students: project.maxStudents, progress_status: project.progressStatus || null, progress_pct: project.progressPct, risk_level: project.riskLevel, organization_contacts: project.contacts, resource_links: project.resourceLinks || [], ai_type: project.aiType, complexity_rating: project.complexityRating, github_url: project.githubUrl || null, drive_folder_url: project.driveFolderUrl || null, last_activity_at: project.lastActivityAt }),
   task: (task: ProjectTask) => ({ id: task.id, project_id: task.projectId, title: task.title, description: task.description || null, assignee_name: task.assigneeName, due_date: task.dueDate || null, status: task.status, priority: task.priority, source: task.source, evidence_url: task.evidenceUrl || null, completed_by: task.completedBy || null, completed_at: task.completedAt || null }),
   issue: (issue: ProjectIssue) => ({ id: issue.id, project_id: issue.projectId, title: issue.title, description: issue.description, category: issue.category, priority: issue.priority, status: issue.status, due_date: issue.dueDate || null, resolution: issue.resolution || null }),
-  meeting: (meeting: ProjectMeeting) => ({ id: meeting.id, project_id: meeting.projectId, title: meeting.title, starts_at: toStoredMeetingTime(meeting.startsAt, meeting.timezone), duration_minutes: meeting.durationMinutes, attendees: meeting.attendees, agenda: meeting.agenda || null, meeting_url: meeting.meetingUrl || null, meeting_password: meeting.meetingPassword || null, timezone: meeting.timezone || 'America/Bogota', status: meeting.status, cancellation_reason: meeting.cancellationReason || null, calendar_sync_status: meeting.calendarSync, calendar_event_url: meeting.calendarEventUrl || null, minute_id: meeting.minuteId || null }),
+  meeting: (meeting: ProjectMeeting) => ({ id: meeting.id, project_id: meeting.projectId, title: meeting.title, starts_at: toStoredMeetingTime(meeting.startsAt, meeting.timezone), duration_minutes: meeting.durationMinutes, attendees: meeting.attendees, agenda: meeting.agenda || null, timezone: meeting.timezone || 'America/Bogota', status: meeting.status, cancellation_reason: meeting.cancellationReason || null, calendar_sync_status: meeting.calendarSync, calendar_event_url: meeting.calendarEventUrl || null, minute_id: meeting.minuteId || null }),
   minute: (minute: MeetingMinute) => ({ id: minute.id, project_id: minute.projectId, meeting_id: minute.meetingId || null, meeting_date: minute.meetingDate, title: minute.title, summary: minute.summary, decisions: minute.decisions, commitments: minute.commitments, risks_detected: minute.risksDetected || null, sentiment: minute.sentiment || null, transcript_file_url: minute.transcriptFileUrl || null, transcript_storage_path: minute.transcriptStoragePath || null, doc_file_url: minute.docFileUrl || null, doc_storage_path: minute.docStoragePath || null, attendees: minute.attendees || [], status: minute.status || 'borrador' }),
   template: (template: DocumentTemplate) => ({ id: template.id, name: template.name, description: template.description, category: template.category, html_template: template.htmlTemplate || '', required_fields: template.requiredFields, is_active: template.isActive !== false, version: template.version || 1, document_type: template.documentType || null, base_template_sha256: template.baseTemplateSha256 || null, original_docx_name: template.originalDocxName || null }),
   document: (document: ProjectDocument) => ({ id: document.id, project_id: document.projectId, template_id: document.templateId, document_type: document.documentType || null, title: document.title, status: document.status, version: document.version, html_content: document.htmlPreview, file_url: document.fileUrl || null, storage_path: document.storagePath || null, pdf_storage_path: document.pdfStoragePath || null, generation_status: document.generationStatus || 'pdf_pendiente', provider: document.provider || 'local', model: document.model || null, source_files: document.sourceFiles || [], last_change_request: document.lastChangeRequest || null, approved_by: document.approvedBy || null, approved_at: document.approvedAt || null }),

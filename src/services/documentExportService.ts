@@ -39,7 +39,16 @@ const makePdf = async (projectDocument: ProjectDocument) => {
     }));
     const target = frameDocument.querySelector<HTMLElement>('.document-container') || frameDocument.body;
     target.style.boxShadow = 'none'; target.style.borderRadius = '0';
-    const canvas = await html2canvas(target, { scale: 1.6, backgroundColor: '#ffffff', useCORS: true, logging: false, imageTimeout: 8_000 });
+    // PDF readers display the stored PDF directly. Render at print-like density
+    // and retain a high-quality image encoding so small institutional text does
+    // not acquire the blurry, screenshot-like appearance of the old export.
+    const canvas = await html2canvas(target, {
+      scale: Math.max(2.5, Math.min(3, window.devicePixelRatio || 1)),
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+      imageTimeout: 8_000,
+    });
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
     const pageWidth = 210; const pageHeight = 297;
     const pageCanvasHeight = Math.round(canvas.width * pageHeight / pageWidth);
@@ -71,7 +80,7 @@ const makePdf = async (projectDocument: ProjectDocument) => {
       pageContext.fillStyle = '#ffffff'; pageContext.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
       pageContext.drawImage(canvas, 0, sourceTop, canvas.width, segmentHeight, horizontalOffset, pageTop, Math.round(canvas.width * contentScale), Math.round(segmentHeight * contentScale));
       if (pageIndex > 0) pdf.addPage('a4', 'portrait');
-      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
+      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 1), 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'SLOW');
       sourceTop = sourceEnd; pageIndex += 1;
     }
     return pdf.output('blob');

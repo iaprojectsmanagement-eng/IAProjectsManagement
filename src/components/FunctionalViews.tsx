@@ -1516,7 +1516,7 @@ const MeetingForm: React.FC<{
         <legend className="text-xs font-bold text-slate-700">Invitados del equipo</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {project.assignedStudents.map((student) => (
-            <label key={student.email} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium">
+            <label key={student.email} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
               <input
                 type="checkbox"
                 checked={attendees.includes(student.email)}
@@ -1963,7 +1963,7 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
               return (
                 <Card key={meeting.id} className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="dynamic-copy">
+                    <div>
                       <h2 className="font-extrabold text-[#0E2C40]">{meeting.title}</h2>
                       <p className="mt-1 text-xs text-slate-400">
                         {projectCode(projects, meeting.projectId)} · {formatDate(meeting.startsAt)} · {meeting.durationMinutes} min
