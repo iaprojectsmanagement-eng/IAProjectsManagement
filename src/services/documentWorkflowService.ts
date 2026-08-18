@@ -130,6 +130,19 @@ export const DocumentWorkflowService = {
     if (error) throw error;
     return (data || []).map(mapVersion);
   },
+  delete: async (document: ProjectDocument) => {
+    if (!SyncService.isRemoteMode() || !supabaseClient) {
+      OperationsService.deleteDocument(document.id);
+      return;
+    }
+    if (document.pdfStoragePath) {
+      const { error: storageError } = await supabaseClient.storage.from('project-documents').remove([document.pdfStoragePath]);
+      if (storageError) throw new Error('No se pudo eliminar el PDF privado del documento.');
+    }
+    const { error } = await supabaseClient.from('project_documents').delete().eq('id', document.id);
+    if (error) throw error;
+    await SyncService.bootstrap();
+  },
   attachPdf: async (document: ProjectDocument, storagePath: string) => {
     if (!SyncService.isRemoteMode() || !supabaseClient) {
       return OperationsService.updateDocument(document.id, { storagePath, pdfStoragePath: storagePath, generationStatus: 'listo' });

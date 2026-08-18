@@ -522,10 +522,6 @@ export const MonitorHome: React.FC<Common> = ({ projects, onOpenProject }) => {
 
   return (
     <div className="home-dashboard mx-auto max-w-6xl space-y-6">
-      <Heading
-        title="Seguimiento del día"
-        text="Una bandeja de trabajo priorizada: abre el proyecto y resuelve lo que requiere intervención."
-      />
       <div className="grid gap-4 md:grid-cols-3">
         {[
           [issues.length, 'Incidencias prioritarias', 'text-rose-600', 'border-rose-100 bg-rose-50/30'],
@@ -585,16 +581,12 @@ export const ProjectsView: React.FC<Common> = ({ projects, onOpenProject, onChan
 
   return (
     <div className="projects-view mx-auto max-w-6xl space-y-5">
-      <Heading
-        title="Proyectos"
-        text="Cada proyecto es un único espacio de trabajo con su equipo, reuniones, tareas, incidencias y documentos."
-        action={
-          <Button onClick={() => setCreate(true)}>
-            <Plus className="h-4 w-4" />
-            Nuevo proyecto
-          </Button>
-        }
-      />
+      <div className="flex justify-end">
+        <Button onClick={() => setCreate(true)}>
+          <Plus className="h-4 w-4" />
+          Nuevo proyecto
+        </Button>
+      </div>
 
       <Modal open={create} title="Nuevo proyecto" onClose={() => setCreate(false)}>
         <form
@@ -706,7 +698,7 @@ export const ProjectsView: React.FC<Common> = ({ projects, onOpenProject, onChan
                     </Badge>
                     <span className="text-xs font-medium text-slate-400">{project.companyName}</span>
                   </div>
-                  <h2 className="mt-3 line-clamp-2 font-extrabold text-[#0E2C40]">{project.title}</h2>
+                  <h2 className="mt-3 line-clamp-2 font-medium text-slate-700">{project.title}</h2>
                 </div>
               </div>
               <div className="mt-5 grid grid-cols-3 gap-2 text-center">
@@ -1078,7 +1070,7 @@ export const TasksView: React.FC<Common & { projectId?: string; isMonitor?: bool
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-xs text-slate-500 font-semibold">{tasks.length} tarea(s) listadas</div>
+        <div className="dynamic-copy text-xs font-semibold">{tasks.length} tarea(s) listadas</div>
         <div className="flex flex-wrap items-center gap-2">
           <ChoiceMenu
             value={statusFilter}
@@ -1123,7 +1115,7 @@ export const TasksView: React.FC<Common & { projectId?: string; isMonitor?: bool
         <div className="divide-y divide-slate-100">
           {tasks.map((task) => (
             <div key={task.id} className="flex flex-wrap items-center gap-3 p-4 transition hover:bg-slate-50/50">
-              <div className="min-w-[220px] flex-1">
+              <div className="dynamic-copy min-w-[220px] flex-1">
                 <b className={`block text-sm font-bold ${task.status === 'completada' ? 'text-slate-400 line-through' : 'text-[#0E2C40]'}`}>
                   {task.title}
                 </b>
@@ -1293,7 +1285,7 @@ export const IssuesView: React.FC<Common & { projectId?: string; isStudent?: boo
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs font-semibold text-slate-500">{issues.length} incidencia(s) registradas</div>
+        <div className="dynamic-copy text-xs font-semibold">{issues.length} incidencia(s) registradas</div>
         <Button tone="danger" onClick={() => setCreate(true)}>
           <Plus className="h-4 w-4" />
           Reportar incidente
@@ -1326,7 +1318,7 @@ export const IssuesView: React.FC<Common & { projectId?: string; isStudent?: boo
           <Card key={issue.id} className="flex flex-col justify-between">
             <div>
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="dynamic-copy">
                   <h2 className="font-extrabold text-[#0E2C40]">{issue.title}</h2>
                   <p className="mt-1 text-xs text-slate-400">
                     {projectCode(projects, issue.projectId)} · {issue.category.replace('_', ' ')} · {formatDate(issue.createdAt)}
@@ -1891,7 +1883,7 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
       </Modal>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-xs font-semibold text-slate-500">{meetings.length} reunión(es) en agenda</div>
+        <div className="dynamic-copy text-xs font-semibold">{meetings.length} reunión(es) en agenda</div>
         <div className="flex flex-wrap items-center gap-2">
           {isMonitor && (
             <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="Vista de agenda">
@@ -1971,7 +1963,7 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
               return (
                 <Card key={meeting.id} className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                    <div className="dynamic-copy">
                       <h2 className="font-extrabold text-[#0E2C40]">{meeting.title}</h2>
                       <p className="mt-1 text-xs text-slate-400">
                         {projectCode(projects, meeting.projectId)} · {formatDate(meeting.startsAt)} · {meeting.durationMinutes} min
@@ -2230,6 +2222,7 @@ export const DocumentsView: React.FC<Common & { projectId?: string; isMonitor?: 
   const [exporting, setExporting] = useState('');
   const [revision, setRevision] = useState('');
   const [revising, setRevising] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState('');
   const [versions, setVersions] = useState<ProjectDocumentVersion[]>([]);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [panel, setPanel] = useState<'create' | 'generated' | 'templates' | null>('generated');
@@ -2338,6 +2331,22 @@ export const DocumentsView: React.FC<Common & { projectId?: string; isMonitor?: 
       setError(caught instanceof Error ? caught.message : 'No fue posible revisar el documento.');
     } finally {
       setRevising(false);
+    }
+  };
+
+  const deleteDocument = async (document: ProjectDocument) => {
+    if (!window.confirm(`¿Eliminar “${document.title}”? Esta acción elimina el documento y sus versiones.`)) return;
+    setDeletingDocumentId(document.id);
+    setError('');
+    try {
+      await DocumentWorkflowService.delete(document);
+      if (preview?.id === document.id) setPreview(null);
+      setVersions([]);
+      onChanged();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo eliminar el documento.');
+    } finally {
+      setDeletingDocumentId('');
     }
   };
 
@@ -2462,6 +2471,10 @@ export const DocumentsView: React.FC<Common & { projectId?: string; isMonitor?: 
                       <Button tone="secondary" onClick={() => void exportDocument(item, 'pdf')}>
                         PDF
                       </Button>
+                      <Button tone="danger" disabled={deletingDocumentId === item.id} onClick={() => void deleteDocument(item)}>
+                        <Trash2 className="h-4 w-4" />
+                        {deletingDocumentId === item.id ? 'Eliminando…' : 'Eliminar'}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -2522,6 +2535,10 @@ export const DocumentsView: React.FC<Common & { projectId?: string; isMonitor?: 
             <Button tone="ghost" onClick={() => setPreview(null)}>
               <X className="h-4 w-4" />
               Cerrar
+            </Button>
+            <Button tone="danger" disabled={deletingDocumentId === preview.id} onClick={() => void deleteDocument(preview)}>
+              <Trash2 className="h-4 w-4" />
+              {deletingDocumentId === preview.id ? 'Eliminando…' : 'Eliminar documento'}
             </Button>
           </div>
           <div className="grid gap-5 xl:grid-cols-[1fr_300px]">
@@ -2938,7 +2955,7 @@ export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () =
             <Badge tone={project.riskLevel === 'rojo' ? 'red' : project.riskLevel === 'amarillo' ? 'amber' : 'green'}>
               {project.code}
             </Badge>
-            <h1 className="mt-2 text-2xl font-black text-[#0E2C40]">{project.title}</h1>
+            <h1 className="mt-2 text-2xl font-medium text-slate-700">{project.title}</h1>
             <p className="mt-1 text-sm text-slate-500">
               {project.companyName} · equipo de {project.assignedStudents.length} personas · avance {project.progressPct}%
             </p>

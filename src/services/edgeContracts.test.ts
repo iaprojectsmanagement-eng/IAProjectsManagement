@@ -108,7 +108,7 @@ describe('Supabase deployment contracts', () => {
     const functions = [
       ['generate-contexto-proyecto', 'contexto_proyecto', '00365211c7d1c5d0afb9b2d0cd34cedec7d14cf8941103cd551f83b7ec91e328'],
       ['generate-plan-actividades', 'plan_actividades', 'b1667448c4d61b2ff61fcc8d66e56d6483dcf3109e8cc6ebf8a028b1a2a65ab0'],
-      ['generate-acta-reunion', 'acta_reunion', 'aa928f827dc30ff3bb11d0037cc38627c2e70a1a9c7ab5498215fa1d96fd9e3c'],
+      ['generate-acta-reunion', 'acta_reunion', '11f84c664a44d6f4a1f05b7eab5db529594fc931e0953ab00444bb1a0b5e5f2f'],
       ['generate-reporte-entregables', 'reporte_entregables', 'c6df020f459e3f4eb65a605f72859569bb81ba338f9c88203ac5cafee16376d8'],
     ];
     for (const [folder, type, hash] of functions) {
@@ -142,5 +142,14 @@ describe('Supabase deployment contracts', () => {
     expect(sql).toContain("'project-source-files', 'project-source-files', false");
     expect(sql).toContain("bucket_id IN ('project-transcripts', 'project-documents', 'project-source-files')");
     expect(sql).toContain('REVOKE ALL ON public.project_document_versions FROM anon');
+  });
+
+  it('allows authorized team members to delete mistaken project documents only', () => {
+    const sql = read('supabase/migrations/20260818_document_deletion_and_acta_template.sql');
+    const workflow = read('src/services/documentWorkflowService.ts');
+    expect(sql).toContain('documents_delete_project');
+    expect(sql).toContain('project_documents_delete_project');
+    expect(sql).toContain('can_access_project(project_id)');
+    expect(workflow).toContain("from('project_documents').delete()");
   });
 });
