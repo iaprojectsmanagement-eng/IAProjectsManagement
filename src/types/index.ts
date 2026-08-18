@@ -200,6 +200,8 @@ export interface ProjectMeeting {
   durationMinutes: number;
   attendees: string[];
   agenda?: string;
+  meetingUrl?: string;
+  meetingPassword?: string;
   timezone?: string;
   status: MeetingStatus;
   cancellationReason?: string;

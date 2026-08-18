@@ -8,6 +8,7 @@ import {
   ProjectDocument,
   ProjectIssue,
   ProjectMeeting,
+  ProjectResourceLink,
   ProjectTask,
   Student,
 } from '../types';
@@ -28,6 +29,7 @@ type Mutation =
   | { id: string; kind: 'upsert'; table: TableName; payload: Record<string, unknown>; createdAt: string }
   | { id: string; kind: 'delete'; table: TableName; recordId: string; createdAt: string }
   | { id: string; kind: 'replace_team'; projectId: string; emails: string[]; createdAt: string }
+  | { id: string; kind: 'update_project_links'; projectId: string; resourceLinks: ProjectResourceLink[]; whatsappUrl?: string; teamsMeetingUrl?: string; githubUrl?: string; driveFolderUrl?: string; createdAt: string }
   | { id: string; kind: 'set_profile_active'; studentId: string; isActive: boolean; createdAt: string }
   | { id: string; kind: 'accept_application'; applicationId: string; studentId: string; projectId: string; createdAt: string };
 
@@ -42,6 +44,9 @@ export interface SyncState {
 let state: SyncState = { mode: remoteMode ? 'supabase' : 'local', status: 'idle', pending: 0 };
 let flushing = false;
 let flushPromise: Promise<void> | null = null;
+let bootstrapPromise: Promise<SyncState> | null = null;
+let lastSuccessfulBootstrapAt = 0;
+const MIN_BOOTSTRAP_INTERVAL_MS = 1_500;
 let legacyCacheCleared = false;
 let realtimeTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<(next: SyncState) => void>();
@@ -90,7 +95,7 @@ const mapProject = (row: any, profiles: any[]): Project => ({
 });
 const mapTask = (row: any): ProjectTask => ({ id: row.id, projectId: row.project_id, title: row.title, description: row.description || undefined, assigneeName: row.assignee_name || 'Por asignar', assigneeEmail: row.assignee_email || undefined, dueDate: row.due_date || undefined, status: row.status, priority: row.priority, source: row.source, evidenceUrl: row.evidence_url || undefined, createdBy: row.created_by || undefined, completedBy: row.completed_by || undefined, completedAt: row.completed_at || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
 const mapIssue = (row: any): ProjectIssue => ({ id: row.id, projectId: row.project_id, title: row.title, description: row.description, category: row.category, priority: row.priority, status: row.status, reportedBy: row.reported_by_name || 'Usuario', reportedByEmail: row.reported_by_email || undefined, ownerName: row.owner_name || undefined, dueDate: row.due_date || undefined, resolution: row.resolution || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
-const mapMeeting = (row: any): ProjectMeeting => ({ id: row.id, projectId: row.project_id, title: row.title, startsAt: row.starts_at, durationMinutes: row.duration_minutes, attendees: Array.isArray(row.attendees) ? row.attendees : [], agenda: row.agenda || undefined, timezone: row.timezone || 'America/Bogota', status: row.status, cancellationReason: row.cancellation_reason || undefined, calendarSync: row.calendar_sync_status || 'pendiente', calendarEventUrl: row.calendar_event_url || undefined, minuteId: row.minute_id || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
+const mapMeeting = (row: any): ProjectMeeting => ({ id: row.id, projectId: row.project_id, title: row.title, startsAt: row.starts_at, durationMinutes: row.duration_minutes, attendees: Array.isArray(row.attendees) ? row.attendees : [], agenda: row.agenda || undefined, meetingUrl: row.meeting_url || undefined, meetingPassword: row.meeting_password || undefined, timezone: row.timezone || 'America/Bogota', status: row.status, cancellationReason: row.cancellation_reason || undefined, calendarSync: row.calendar_sync_status || 'pendiente', calendarEventUrl: row.calendar_event_url || undefined, minuteId: row.minute_id || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
 const mapMinute = (row: any): MeetingMinute => ({ id: row.id, projectId: row.project_id, meetingId: row.meeting_id || undefined, projectTitle: row.projects?.title || 'Proyecto', meetingDate: row.meeting_date, title: row.title, summary: row.summary || '', decisions: row.decisions || [], commitments: row.commitments || [], risksDetected: row.risks_detected || undefined, sentiment: row.sentiment || undefined, transcriptFileUrl: row.transcript_file_url || undefined, transcriptStoragePath: row.transcript_storage_path || undefined, docFileUrl: row.doc_file_url || undefined, docStoragePath: row.doc_storage_path || undefined, uploadedBy: row.uploaded_by || 'Usuario', attendees: row.attendees || [], status: row.status || 'borrador', createdAt: iso(row.created_at) });
 const mapTemplate = (row: any): DocumentTemplate => ({ id: row.id, name: row.name, description: row.description, category: row.category, requiredFields: row.required_fields || [], htmlTemplate: row.html_template, isActive: row.is_active, version: row.version || 1, documentType: row.document_type || undefined, baseTemplateSha256: row.base_template_sha256 || undefined, originalDocxName: row.original_docx_name || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
 const mapDocument = (row: any): ProjectDocument => ({ id: row.id, projectId: row.project_id, templateId: row.template_id, documentType: row.document_type || undefined, title: row.title, status: row.status, version: row.version, generatedBy: row.generated_by || 'Usuario', htmlPreview: row.html_content, fileUrl: row.file_url || undefined, storagePath: row.storage_path || undefined, pdfStoragePath: row.pdf_storage_path || row.storage_path || undefined, generationStatus: row.generation_status || 'pdf_pendiente', provider: row.provider || 'template', model: row.model || undefined, sourceFiles: row.source_files || [], lastChangeRequest: row.last_change_request || undefined, approvedBy: row.approved_by || undefined, approvedAt: row.approved_at || undefined, createdAt: iso(row.created_at), updatedAt: iso(row.updated_at) });
@@ -149,6 +154,16 @@ const execute = async (mutation: Mutation) => {
       const { error: removeError } = await supabaseClient.rpc('remove_student_from_project', { target_student_id: profile.id, expected_project_id: mutation.projectId });
       if (removeError) throw removeError;
     }
+  } else if (mutation.kind === 'update_project_links') {
+    const { error } = await supabaseClient.rpc('set_project_links', {
+      target_project_id: mutation.projectId,
+      target_resource_links: mutation.resourceLinks,
+      target_whatsapp_url: mutation.whatsappUrl || null,
+      target_teams_meeting_url: mutation.teamsMeetingUrl || null,
+      target_github_url: mutation.githubUrl || null,
+      target_drive_folder_url: mutation.driveFolderUrl || null,
+    });
+    if (error) throw error;
   } else if (mutation.kind === 'set_profile_active') {
     const { error } = await supabaseClient.from('profiles').update({ is_active: mutation.isActive }).eq('id', mutation.studentId);
     if (error) throw error;
@@ -184,12 +199,15 @@ export const SyncService = {
       void client.removeChannel(channel);
     };
   },
-  bootstrap: async () => {
-    if (!remoteMode) { emit({ mode: 'local', status: 'synced', pending: 0, lastSyncedAt: new Date().toISOString() }); return state; }
-    if (!supabaseClient) throw new Error('VITE_DATA_MODE=supabase requiere URL y clave de Supabase.');
+  bootstrap: (): Promise<SyncState> => {
+    if (!remoteMode) { emit({ mode: 'local', status: 'synced', pending: 0, lastSyncedAt: new Date().toISOString() }); return Promise.resolve(state); }
+    if (!supabaseClient) return Promise.reject(new Error('VITE_DATA_MODE=supabase requiere URL y clave de Supabase.'));
+    if (bootstrapPromise) return bootstrapPromise;
+    if (state.status === 'synced' && Date.now() - lastSuccessfulBootstrapAt < MIN_BOOTSTRAP_INTERVAL_MS) return Promise.resolve(state);
     clearLegacyLocalCache();
     emit({ status: 'loading', error: undefined });
-    try {
+    const request = (async () => {
+      try {
       await SyncService.flush();
       const results = await Promise.all([
         supabaseClient.from('profiles').select('id,project_id,full_name,email,student_code,role'),
@@ -219,14 +237,22 @@ export const SyncService = {
       cache(CACHE.templates, (templatesResult.data || []).map(mapTemplate)); cache(CACHE.documents, (documentsResult.data || []).map(mapDocument));
       cache(CACHE.activity, (activityResult.data || []).map(mapActivity));
       cache(CACHE.applications, (applicationsResult.data || []).map((row: any): Application => ({ id: row.id, projectId: row.project_id, studentId: row.student_id, studentName: profiles.find((profile: any) => profile.id === row.student_id)?.full_name || 'Estudiante', studentEmail: profiles.find((profile: any) => profile.id === row.student_id)?.email || '', status: row.status, createdAt: iso(row.created_at) })));
+      lastSuccessfulBootstrapAt = Date.now();
       emit({ status: 'synced', pending: readQueue().length, lastSyncedAt: new Date().toISOString(), error: undefined });
       return state;
-    } catch (error) {
+      } catch (error) {
       const detail = typeof error === 'object' && error && 'message' in error ? String(error.message) : undefined;
       const message = error instanceof Error ? error.message : detail || 'No se pudieron cargar los datos remotos.';
       emit({ status: 'error', error: message });
       throw new Error(message);
-    }
+      }
+    })();
+    bootstrapPromise = request;
+    void request.then(
+      () => { bootstrapPromise = null; },
+      () => { bootstrapPromise = null; },
+    );
+    return request;
   },
   enqueueUpsert: (table: TableName, payload: Record<string, unknown>) => {
     if (!remoteMode) return;
@@ -241,6 +267,11 @@ export const SyncService = {
   enqueueTeamReplacement: (projectId: string, emails: string[]) => {
     if (!remoteMode) return;
     writeQueue([...readQueue(), { id: uuid(), kind: 'replace_team', projectId, emails, createdAt: new Date().toISOString() }]);
+    void SyncService.flush().catch(() => undefined);
+  },
+  enqueueProjectLinks: (projectId: string, links: { resourceLinks: ProjectResourceLink[]; whatsappUrl?: string; teamsMeetingUrl?: string; githubUrl?: string; driveFolderUrl?: string }) => {
+    if (!remoteMode) return;
+    writeQueue([...readQueue(), { id: uuid(), kind: 'update_project_links', projectId, ...links, createdAt: new Date().toISOString() }]);
     void SyncService.flush().catch(() => undefined);
   },
   enqueueProfileActive: (studentId: string, isActive: boolean) => {
@@ -284,7 +315,7 @@ export const toDatabase = {
   project: (project: Project) => ({ id: project.id, company_name: project.companyName, folder_name: project.code, title: project.title, challenge_description: project.challengeDescription || null, whatsapp_url: project.whatsappUrl || null, teams_meeting_url: project.teamsMeetingUrl || null, min_students: project.minStudents, max_students: project.maxStudents, progress_status: project.progressStatus || null, progress_pct: project.progressPct, risk_level: project.riskLevel, organization_contacts: project.contacts, resource_links: project.resourceLinks || [], ai_type: project.aiType, complexity_rating: project.complexityRating, github_url: project.githubUrl || null, drive_folder_url: project.driveFolderUrl || null, last_activity_at: project.lastActivityAt }),
   task: (task: ProjectTask) => ({ id: task.id, project_id: task.projectId, title: task.title, description: task.description || null, assignee_name: task.assigneeName, due_date: task.dueDate || null, status: task.status, priority: task.priority, source: task.source, evidence_url: task.evidenceUrl || null, completed_by: task.completedBy || null, completed_at: task.completedAt || null }),
   issue: (issue: ProjectIssue) => ({ id: issue.id, project_id: issue.projectId, title: issue.title, description: issue.description, category: issue.category, priority: issue.priority, status: issue.status, due_date: issue.dueDate || null, resolution: issue.resolution || null }),
-  meeting: (meeting: ProjectMeeting) => ({ id: meeting.id, project_id: meeting.projectId, title: meeting.title, starts_at: toStoredMeetingTime(meeting.startsAt, meeting.timezone), duration_minutes: meeting.durationMinutes, attendees: meeting.attendees, agenda: meeting.agenda || null, timezone: meeting.timezone || 'America/Bogota', status: meeting.status, cancellation_reason: meeting.cancellationReason || null, calendar_sync_status: meeting.calendarSync, calendar_event_url: meeting.calendarEventUrl || null, minute_id: meeting.minuteId || null }),
+  meeting: (meeting: ProjectMeeting) => ({ id: meeting.id, project_id: meeting.projectId, title: meeting.title, starts_at: toStoredMeetingTime(meeting.startsAt, meeting.timezone), duration_minutes: meeting.durationMinutes, attendees: meeting.attendees, agenda: meeting.agenda || null, meeting_url: meeting.meetingUrl || null, meeting_password: meeting.meetingPassword || null, timezone: meeting.timezone || 'America/Bogota', status: meeting.status, cancellation_reason: meeting.cancellationReason || null, calendar_sync_status: meeting.calendarSync, calendar_event_url: meeting.calendarEventUrl || null, minute_id: meeting.minuteId || null }),
   minute: (minute: MeetingMinute) => ({ id: minute.id, project_id: minute.projectId, meeting_id: minute.meetingId || null, meeting_date: minute.meetingDate, title: minute.title, summary: minute.summary, decisions: minute.decisions, commitments: minute.commitments, risks_detected: minute.risksDetected || null, sentiment: minute.sentiment || null, transcript_file_url: minute.transcriptFileUrl || null, transcript_storage_path: minute.transcriptStoragePath || null, doc_file_url: minute.docFileUrl || null, doc_storage_path: minute.docStoragePath || null, attendees: minute.attendees || [], status: minute.status || 'borrador' }),
   template: (template: DocumentTemplate) => ({ id: template.id, name: template.name, description: template.description, category: template.category, html_template: template.htmlTemplate || '', required_fields: template.requiredFields, is_active: template.isActive !== false, version: template.version || 1, document_type: template.documentType || null, base_template_sha256: template.baseTemplateSha256 || null, original_docx_name: template.originalDocxName || null }),
   document: (document: ProjectDocument) => ({ id: document.id, project_id: document.projectId, template_id: document.templateId, document_type: document.documentType || null, title: document.title, status: document.status, version: document.version, html_content: document.htmlPreview, file_url: document.fileUrl || null, storage_path: document.storagePath || null, pdf_storage_path: document.pdfStoragePath || null, generation_status: document.generationStatus || 'pdf_pendiente', provider: document.provider || 'local', model: document.model || null, source_files: document.sourceFiles || [], last_change_request: document.lastChangeRequest || null, approved_by: document.approvedBy || null, approved_at: document.approvedAt || null }),

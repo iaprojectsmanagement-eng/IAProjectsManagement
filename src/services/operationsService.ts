@@ -73,6 +73,18 @@ export const OperationsService = {
   },
   createProject: (data: { code: string; companyName: string; title: string; challengeDescription?: string; maxStudents: number }) => { const projects = DataService.addProject({ ...data, progressPct: 0, riskLevel: 'verde', minStudents: 1, contacts: [], assignedStudents: [], aiType: [], complexityRating: 5 }); const project = projects[0]; SyncService.enqueueUpsert('projects', toDatabase.project(project)); AuditService.record({ projectId: project.id, entityType: 'project', entityId: project.id, action: 'create', afterData: project }); return projects; },
   updateProject: (project: Project) => { const before = DataService.getProjectById(project.id); const projects = DataService.updateProject(project); SyncService.enqueueUpsert('projects', toDatabase.project(project)); AuditService.record({ projectId: project.id, entityType: 'project', entityId: project.id, action: 'update', beforeData: before, afterData: project }); return projects; },
+  updateProjectLinks: (projectId: string, links: Pick<Project, 'resourceLinks' | 'whatsappUrl' | 'teamsMeetingUrl' | 'githubUrl' | 'driveFolderUrl'>) => {
+    const before = DataService.getProjectById(projectId);
+    if (!before) throw new Error('Proyecto no encontrado.');
+    const updated: Project = { ...before, ...links, resourceLinks: links.resourceLinks || [], lastActivityAt: new Date().toISOString() };
+    const projects = DataService.updateProject(updated);
+    SyncService.enqueueProjectLinks(projectId, {
+      resourceLinks: updated.resourceLinks || [], whatsappUrl: updated.whatsappUrl, teamsMeetingUrl: updated.teamsMeetingUrl,
+      githubUrl: updated.githubUrl, driveFolderUrl: updated.driveFolderUrl,
+    });
+    AuditService.record({ projectId, entityType: 'project', entityId: projectId, action: 'update', beforeData: before, afterData: updated });
+    return projects;
+  },
   getApplications: () => DataService.getApplications(),
   applyToProject: (projectId: string, student: { id: string; name: string; email: string }) => { const items = DataService.applyToProject(projectId, student); const application = items.find((item) => item.projectId === projectId && normaliseEmail(item.studentEmail) === normaliseEmail(student.email)); if (application) SyncService.enqueueUpsert('project_applications', toDatabase.application(application)); return items; },
   acceptApplication: (applicationId: string) => { const result = DataService.acceptApplication(applicationId); const application = result.applications.find((item) => item.id === applicationId); if (application) { SyncService.enqueueApplicationAcceptance(application.id, application.studentId, application.projectId); addActivity(application.projectId, 'equipo', `${application.studentName} fue aceptado en el proyecto.`); } return result; },

@@ -23,14 +23,14 @@ describe('project rules', () => {
     expect(normaliseEmail('  Student@U.Icesi.edu.co ')).toBe('student@u.icesi.edu.co');
   });
 
-  it('rejects a new student when a project is full', () => {
+  it('keeps capacity informational when management accepts a new student', () => {
     const project = createProject([
       { id: 'student-1', name: 'Student One', email: 'one@u.icesi.edu.co' },
       { id: 'student-2', name: 'Student Two', email: 'two@u.icesi.edu.co' }
     ]);
 
     expect(hasAvailableCapacity(project)).toBe(false);
-    expect(canAcceptStudent(project, 'new@u.icesi.edu.co')).toBe(false);
+    expect(canAcceptStudent(project, 'new@u.icesi.edu.co')).toBe(true);
   });
 
   it('allows accepting a student already assigned without duplicating capacity', () => {

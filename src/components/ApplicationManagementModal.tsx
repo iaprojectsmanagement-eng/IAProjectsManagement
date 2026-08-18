@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Project, Application } from '../types';
-import { X, CheckCircle2, XCircle, UserPlus, ShieldAlert } from 'lucide-react';
+import { X, CheckCircle2, XCircle, ShieldAlert } from 'lucide-react';
 
 interface ApplicationManagementModalProps {
   project: Project;
@@ -15,37 +16,49 @@ export const ApplicationManagementModal: React.FC<ApplicationManagementModalProp
   applications,
   onClose,
   onAccept,
-  onReject
+  onReject,
 }) => {
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const projectApps = applications.filter((a) => a.projectId === project.id);
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-md">
+      <div className="w-full max-w-xl space-y-6 border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+            <span className="bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0D9488]">
               {project.code}
             </span>
-            <h3 className="text-lg font-extrabold text-white font-outfit mt-1">Gestión de Postulaciones</h3>
-            <p className="text-xs text-slate-400">{project.title}</p>
+            <h3 className="mt-1 text-lg font-extrabold text-[#0E2C40]">Gestión de Postulaciones</h3>
+            <p className="text-xs text-slate-500">{project.title}</p>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
-            <X className="h-5 w-5" />
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Current Team Status */}
-        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2">
-          <div className="flex justify-between font-semibold text-slate-300">
+        <div className="space-y-2 border border-slate-200 bg-slate-50/70 p-4 text-xs">
+          <div className="flex justify-between font-semibold text-slate-700">
             <span>Estudiantes Actualmente Asignados ({project.assignedStudents.length}):</span>
-            <span className="text-indigo-400">
+            <span className="text-[#0D9488]">
               Mín: {project.minStudents} | Máx: {project.maxStudents}
             </span>
           </div>
 
           {project.assignedStudents.length > 0 ? (
-            <ul className="list-disc list-inside text-slate-400">
+            <ul className="list-inside list-disc space-y-0.5 text-slate-600">
               {project.assignedStudents.map((s) => (
                 <li key={s.id}>
                   {s.name} ({s.email})
@@ -53,33 +66,33 @@ export const ApplicationManagementModal: React.FC<ApplicationManagementModalProp
               ))}
             </ul>
           ) : (
-            <p className="text-amber-400 italic">No hay estudiantes asignados en este momento.</p>
+            <p className="italic text-amber-700">No hay estudiantes asignados en este momento.</p>
           )}
         </div>
 
         {/* Pending Applications List */}
         <div className="space-y-3">
-          <h4 className="text-xs font-bold text-slate-200">Solicitudes de Postulación Recibidas ({projectApps.length}):</h4>
+          <h4 className="text-xs font-bold text-slate-700">Solicitudes de Postulación Recibidas ({projectApps.length}):</h4>
 
           {projectApps.length === 0 ? (
-            <p className="text-xs text-slate-500 italic text-center py-6">No hay postulaciones registradas para este proyecto.</p>
+            <p className="py-6 text-center text-xs italic text-slate-400">No hay postulaciones registradas para este proyecto.</p>
           ) : (
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <div className="max-h-60 space-y-2 overflow-y-auto pr-1">
               {projectApps.map((app) => (
                 <div
                   key={app.id}
-                  className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between text-xs"
+                  className="flex items-center justify-between border border-slate-200 bg-white p-3.5 text-xs shadow-sm"
                 >
                   <div>
-                    <p className="font-bold text-slate-100">{app.studentName}</p>
-                    <p className="text-slate-400 text-[11px]">{app.studentEmail}</p>
+                    <p className="font-bold text-slate-900">{app.studentName}</p>
+                    <p className="text-[11px] text-slate-400">{app.studentEmail}</p>
                     <span
-                      className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded ${
+                      className={`mt-1 inline-block px-2 py-0.5 text-[10px] font-bold ${
                         app.status === 'aceptada'
-                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                          ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
                           : app.status === 'rechazada'
-                          ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                          : 'bg-amber-950 text-amber-300 border border-amber-800'
+                            ? 'border border-rose-200 bg-rose-50 text-rose-800'
+                            : 'border border-amber-200 bg-amber-50 text-amber-800'
                       }`}
                     >
                       {app.status.toUpperCase()}
@@ -90,7 +103,7 @@ export const ApplicationManagementModal: React.FC<ApplicationManagementModalProp
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => onAccept(app.id)}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center space-x-1 shadow-md shadow-emerald-600/20"
+                        className="flex items-center space-x-1 bg-emerald-600 px-3 py-1.5 font-bold text-white shadow-sm transition hover:bg-emerald-700"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         <span>Aceptar</span>
@@ -98,7 +111,7 @@ export const ApplicationManagementModal: React.FC<ApplicationManagementModalProp
 
                       <button
                         onClick={() => onReject(app.id)}
-                        className="px-3 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 font-bold flex items-center space-x-1"
+                        className="flex items-center space-x-1 border border-rose-200 bg-rose-50 px-3 py-1.5 font-bold text-rose-700 transition hover:bg-rose-100"
                       >
                         <XCircle className="h-3.5 w-3.5" />
                         <span>Rechazar</span>
@@ -111,13 +124,14 @@ export const ApplicationManagementModal: React.FC<ApplicationManagementModalProp
           )}
         </div>
 
-        <div className="bg-indigo-950/60 border border-indigo-800/60 p-3 rounded-xl text-[11px] text-indigo-300 flex items-start space-x-2">
-          <ShieldAlert className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+        <div className="flex items-start space-x-2 border border-teal-200 bg-teal-50/70 p-3 text-[11px] text-[#0D9488]">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#0D9488]" />
           <p>
             <strong>Regla de Unicidad:</strong> Al aceptar a un estudiante, sus postulaciones a otros proyectos se eliminan automáticamente para asegurar que pertenezca a 1 solo equipo.
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

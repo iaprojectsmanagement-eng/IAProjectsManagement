@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Project, RiskLevel } from '../types';
-import { X, Save, Plus, Cpu, DollarSign, Building } from 'lucide-react';
+import { X, Save } from 'lucide-react';
 
 interface ProjectFormModalProps {
   projectToEdit?: Project | null;
@@ -11,9 +12,17 @@ interface ProjectFormModalProps {
 export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   projectToEdit,
   onClose,
-  onSave
+  onSave,
 }) => {
   const isEditing = !!projectToEdit;
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const [code, setCode] = useState(projectToEdit?.code || '');
   const [companyName, setCompanyName] = useState(projectToEdit?.companyName || '');
@@ -25,7 +34,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const [complexityRating, setComplexityRating] = useState<number>(projectToEdit?.complexityRating ?? 5);
   const [impactRating, setImpactRating] = useState<number>(projectToEdit?.impactRating ?? 8);
   const [aiTypeInput, setAiTypeInput] = useState<string>(projectToEdit?.aiType.join(', ') || 'IA Generativa');
-  const [copImpactAnnual, setCopImpactAnnual] = useState<string>(projectToEdit?.copImpactAnnual ? String(projectToEdit.copImpactAnnual) : '');
+  const [copImpactAnnual, setCopImpactAnnual] = useState<string>(
+    projectToEdit?.copImpactAnnual ? String(projectToEdit.copImpactAnnual) : ''
+  );
   const [whatsappUrl, setWhatsappUrl] = useState(projectToEdit?.whatsappUrl || '');
   const [teamsMeetingUrl, setTeamsMeetingUrl] = useState(projectToEdit?.teamsMeetingUrl || '');
   const [githubUrl, setGithubUrl] = useState(projectToEdit?.githubUrl || '');
@@ -65,7 +76,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       teamsMeetingUrl: teamsMeetingUrl.trim() || undefined,
       githubUrl: githubUrl.trim() || undefined,
       driveFolderUrl: driveFolderUrl.trim() || undefined,
-      lastActivityAt: new Date().toISOString()
+      lastActivityAt: new Date().toISOString(),
     };
 
     onSave(projectData);
@@ -73,41 +84,45 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-md">
+      <div className="max-h-[90vh] w-full max-w-2xl space-y-6 overflow-y-auto border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-              {isEditing ? 'EDITAR PROYECTO' : 'CREAR NUEVO PROYECTO'}
+            <span className="bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0D9488]">
+              {isEditing ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}
             </span>
-            <h3 className="text-lg font-extrabold text-white font-outfit mt-1">
+            <h3 className="mt-1 text-lg font-extrabold text-[#0E2C40]">
               {isEditing ? `Editar ${projectToEdit?.code}` : 'Agregar Proyecto al Curso'}
             </h3>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
-            <X className="h-5 w-5" />
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">
-                Empresa / Organización <span className="text-rose-400">*</span>
+              <label className="mb-1 block font-semibold text-slate-700">
+                Empresa / Organización <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 placeholder="Ej. Coomeva CEM, INSIGHT PMO, Bancoomeva..."
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
                 required
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">
+              <label className="mb-1 block font-semibold text-slate-700">
                 Código / Identificador de Grupo (Opcional)
               </label>
               <input
@@ -115,66 +130,66 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 placeholder="Ej. 3_CEM, 6_PMO, 16_WinBack..."
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:border-indigo-500 font-mono"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 font-mono text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1">
-              Título del Proyecto / Reto <span className="text-rose-400">*</span>
+            <label className="mb-1 block font-semibold text-slate-700">
+              Título del Proyecto / Reto <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               placeholder="Ej. Clasificación de solicitudes de servicio sobre línea de emergencias"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:border-indigo-500"
+              className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               required
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1">Descripción del Reto (Opcional)</label>
+            <label className="mb-1 block font-semibold text-slate-700">Descripción del Reto (Opcional)</label>
             <textarea
               rows={3}
               placeholder="Detalla el problema a resolver, metodología o requerimientos clave..."
               value={challengeDescription}
               onChange={(e) => setChallengeDescription(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:border-indigo-500"
+              className="w-full border border-slate-200 bg-white p-3 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
             ></textarea>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Estado de Progreso</label>
+              <label className="mb-1 block font-semibold text-slate-700">Estado de Progreso</label>
               <input
                 type="text"
                 placeholder="Ej. Terminado, 80%, En desarrollo..."
                 value={progressStatus}
                 onChange={(e) => setProgressStatus(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">% de Avance (0 - 100)</label>
+              <label className="mb-1 block font-semibold text-slate-700">% de Avance (0 - 100)</label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={progressPct}
                 onChange={(e) => setProgressPct(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Nivel de Riesgo (Semáforo)</label>
+              <label className="mb-1 block font-semibold text-slate-700">Nivel de Riesgo (Semáforo)</label>
               <select
                 value={riskLevel}
                 onChange={(e) => setRiskLevel(e.target.value as RiskLevel)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               >
                 <option value="verde">🟢 Al Día (Verde)</option>
                 <option value="amarillo">🟡 Advertencia (Amarillo)</option>
@@ -183,75 +198,85 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Tipo de IA (Separados por coma)</label>
+              <label className="mb-1 block font-semibold text-slate-700">Tipo de IA (Separados por coma)</label>
               <input
                 type="text"
                 placeholder="Ej. IA Generativa, Clasificación, Agentes"
                 value={aiTypeInput}
                 onChange={(e) => setAiTypeInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Complejidad (1 a 10)</label>
+              <label className="mb-1 block font-semibold text-slate-700">Complejidad (1 a 10)</label>
               <input
                 type="number"
                 min="1"
                 max="10"
                 value={complexityRating}
                 onChange={(e) => setComplexityRating(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Impacto Estimado COP/Año (Opcional)</label>
+              <label className="mb-1 block font-semibold text-slate-700">Impacto COP/Año (Opcional)</label>
               <input
                 type="number"
                 placeholder="Ej. 280000000"
                 value={copImpactAnnual}
                 onChange={(e) => setCopImpactAnnual(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500 font-mono"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 font-mono text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+          <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-2 md:grid-cols-2">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Enlace WhatsApp (Opcional)</label>
+              <label className="mb-1 block font-semibold text-slate-700">Enlace WhatsApp (Opcional)</label>
               <input
                 type="url"
                 placeholder="https://chat.whatsapp.com/..."
                 value={whatsappUrl}
                 onChange={(e) => setWhatsappUrl(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Enlace Reunión MS Teams (Opcional)</label>
+              <label className="mb-1 block font-semibold text-slate-700">Enlace Reunión MS Teams (Opcional)</label>
               <input
                 type="url"
                 placeholder="https://teams.microsoft.com/..."
                 value={teamsMeetingUrl}
                 onChange={(e) => setTeamsMeetingUrl(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-indigo-500"
+                className="w-full border border-slate-200 bg-white px-3.5 py-2 text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center justify-center space-x-2 transition shadow-lg shadow-indigo-600/20 mt-4"
-          >
-            <Save className="h-4 w-4" />
-            <span>{isEditing ? 'Guardar Cambios del Proyecto' : 'Crear Proyecto'}</span>
-          </button>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex items-center space-x-2 bg-[#0D9488] px-5 py-2 font-bold text-white shadow-sm transition hover:bg-[#0F766E]"
+            >
+              <Save className="h-4 w-4" />
+              <span>{isEditing ? 'Guardar Cambios' : 'Crear Proyecto'}</span>
+            </button>
+          </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

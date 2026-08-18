@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X, UserPlus, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { X, UserPlus } from 'lucide-react';
 import Papa from 'papaparse';
 
 interface MassUserImportModalProps {
@@ -9,64 +10,77 @@ interface MassUserImportModalProps {
 
 export const MassUserImportModal: React.FC<MassUserImportModalProps> = ({
   onClose,
-  onImportComplete
+  onImportComplete,
 }) => {
   const [inputText, setInputText] = useState(
     `nombre,correo,codigo\nJuan Perez,juan_perez@u.icesi.edu.co,2201040\nMaria Lopez,maria_lopez@u.icesi.edu.co,2201041`
   );
 
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const handleParseAndImport = () => {
     try {
       const parsed = Papa.parse<{ nombre: string; correo: string; codigo: string }>(inputText, {
         header: true,
-        skipEmptyLines: true
+        skipEmptyLines: true,
       });
 
       const count = parsed.data.length;
       onImportComplete(count);
       alert(`¡Carga masiva completada! Se crearon ${count} cuentas de estudiantes en Supabase Auth con su código como contraseña inicial.`);
       onClose();
-    } catch (e) {
+    } catch {
       alert('Error en el formato del CSV / Texto.');
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-md">
+      <div className="w-full max-w-lg space-y-6 border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-              GESTOR MASIVO DE USUARIOS
+            <span className="bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0D9488]">
+              Gestor Masivo de Usuarios
             </span>
-            <h3 className="text-lg font-extrabold text-white font-outfit mt-1">Cargar Estudiantes (CSV / Texto)</h3>
+            <h3 className="mt-1 text-lg font-extrabold text-[#0E2C40]">Cargar Estudiantes (CSV / Texto)</h3>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
-            <X className="h-5 w-5" />
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="space-y-4">
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Ingresa o pega la lista de estudiantes con las columnas <code className="text-indigo-400 font-mono">nombre,correo,codigo</code>. Sus contraseñas iniciales se generarán automáticamente usando su código de estudiante.
+          <p className="text-xs leading-relaxed text-slate-600">
+            Ingresa o pega la lista de estudiantes con las columnas <code className="bg-slate-100 px-1.5 py-0.5 font-mono text-[#0D9488]">nombre,correo,codigo</code>. Sus contraseñas iniciales se generarán automáticamente usando su código de estudiante.
           </p>
 
           <textarea
             rows={8}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:border-indigo-500"
+            className="w-full border border-slate-200 bg-white p-3 font-mono text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
           ></textarea>
 
           <button
             onClick={handleParseAndImport}
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center space-x-2 transition shadow-lg shadow-indigo-600/20"
+            className="flex w-full items-center justify-center space-x-2 bg-[#0D9488] py-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#0F766E]"
           >
             <UserPlus className="h-4 w-4" />
             <span>Procesar Carga Masiva de Usuarios</span>
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

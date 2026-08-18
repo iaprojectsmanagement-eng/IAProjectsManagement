@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Project } from '../types';
-import { X, Save, Link2, MessageCircle, Video, Github, Folder } from 'lucide-react';
+import { X, Save, MessageCircle, Video, Github, Folder } from 'lucide-react';
 
 interface EditLinksModalProps {
   project: Project;
@@ -14,6 +15,14 @@ export const EditLinksModal: React.FC<EditLinksModalProps> = ({ project, onClose
   const [githubUrl, setGithubUrl] = useState(project.githubUrl || '');
   const [driveFolderUrl, setDriveFolderUrl] = useState(project.driveFolderUrl || '');
 
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -24,7 +33,7 @@ export const EditLinksModal: React.FC<EditLinksModalProps> = ({ project, onClose
       githubUrl,
       driveFolderUrl,
       emptyFieldsWarning: !(whatsappUrl && teamsMeetingUrl && githubUrl && driveFolderUrl),
-      lastActivityAt: new Date().toISOString()
+      lastActivityAt: new Date().toISOString(),
     };
 
     onSaveLinks(updated);
@@ -32,25 +41,29 @@ export const EditLinksModal: React.FC<EditLinksModalProps> = ({ project, onClose
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-md">
+      <div className="w-full max-w-lg space-y-6 border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+            <span className="bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0D9488]">
               {project.code}
             </span>
-            <h3 className="text-lg font-extrabold text-white font-outfit mt-1">Editar Enlaces de Interés</h3>
+            <h3 className="mt-1 text-lg font-extrabold text-[#0E2C40]">Editar Enlaces de Interés</h3>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
-            <X className="h-5 w-5" />
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center space-x-1.5">
-              <MessageCircle className="h-4 w-4 text-emerald-400" />
+            <label className="mb-1 flex items-center space-x-1.5 text-xs font-semibold text-slate-700">
+              <MessageCircle className="h-4 w-4 text-emerald-600" />
               <span>Enlace de Grupo de WhatsApp:</span>
             </label>
             <input
@@ -58,13 +71,13 @@ export const EditLinksModal: React.FC<EditLinksModalProps> = ({ project, onClose
               placeholder="https://chat.whatsapp.com/..."
               value={whatsappUrl}
               onChange={(e) => setWhatsappUrl(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:border-indigo-500"
+              className="w-full border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center space-x-1.5">
-              <Video className="h-4 w-4 text-indigo-400" />
+            <label className="mb-1 flex items-center space-x-1.5 text-xs font-semibold text-slate-700">
+              <Video className="h-4 w-4 text-teal-600" />
               <span>Enlace a Reunión Recurrente de MS Teams:</span>
             </label>
             <input
@@ -72,47 +85,57 @@ export const EditLinksModal: React.FC<EditLinksModalProps> = ({ project, onClose
               placeholder="https://teams.microsoft.com/l/meetup-join/..."
               value={teamsMeetingUrl}
               onChange={(e) => setTeamsMeetingUrl(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:border-indigo-500"
+              className="w-full border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center space-x-1.5">
-              <Github className="h-4 w-4 text-purple-400" />
-              <span>Enlace a Repositorio de GitHub:</span>
+            <label className="mb-1 flex items-center space-x-1.5 text-xs font-semibold text-slate-700">
+              <Github className="h-4 w-4 text-slate-700" />
+              <span>Repositorio en GitHub:</span>
             </label>
             <input
               type="url"
-              placeholder="https://github.com/usuario/proyecto-ia"
+              placeholder="https://github.com/empresa/repo-ia"
               value={githubUrl}
               onChange={(e) => setGithubUrl(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:border-indigo-500"
+              className="w-full border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center space-x-1.5">
-              <Folder className="h-4 w-4 text-sky-400" />
-              <span>Enlace a Carpeta Consolidada Google Drive / OneDrive:</span>
+            <label className="mb-1 flex items-center space-x-1.5 text-xs font-semibold text-slate-700">
+              <Folder className="h-4 w-4 text-sky-600" />
+              <span>Carpeta de Archivos en Google Drive:</span>
             </label>
             <input
               type="url"
               placeholder="https://drive.google.com/drive/folders/..."
               value={driveFolderUrl}
               onChange={(e) => setDriveFolderUrl(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:border-indigo-500"
+              className="w-full border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center space-x-2 transition shadow-lg shadow-indigo-600/20"
-          >
-            <Save className="h-4 w-4" />
-            <span>Guardar Enlaces de Proyecto</span>
-          </button>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex items-center space-x-1.5 bg-[#0D9488] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#0F766E]"
+            >
+              <Save className="h-4 w-4" />
+              <span>Guardar Enlaces</span>
+            </button>
+          </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Project, MeetingMinute } from '../types';
-import { X, RefreshCw, Trash2, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Project } from '../types';
+import { X, RefreshCw, Trash2 } from 'lucide-react';
 
 interface ReassignMinuteModalProps {
   minuteId: string;
@@ -15,9 +16,17 @@ export const ReassignMinuteModal: React.FC<ReassignMinuteModalProps> = ({
   projects,
   onClose,
   onReassign,
-  onDelete
+  onDelete,
 }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const handleConfirmMove = () => {
     if (!selectedProjectId) return;
@@ -34,34 +43,40 @@ export const ReassignMinuteModal: React.FC<ReassignMinuteModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-md">
+      <div className="w-full max-w-md space-y-6 border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-              PERMISO EXCLUSIVO SUPERUSER
+            <span className="bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+              Permiso de Coordinación
             </span>
-            <h3 className="text-lg font-extrabold text-white font-outfit mt-1">Reasignar o Eliminar Acta</h3>
+            <h3 className="mt-1 text-lg font-extrabold text-[#0E2C40]">Reasignar o Eliminar Acta</h3>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
-            <X className="h-5 w-5" />
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="space-y-4">
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs space-y-1">
-            <p className="text-slate-400">Si un estudiante subió un archivo o acta en el proyecto equivocado, puedes trasladarla a otro grupo o eliminarla.</p>
+          <div className="border border-slate-200 bg-slate-50/70 p-3.5 text-xs">
+            <p className="text-slate-600">
+              Si un estudiante subió un archivo o acta en el proyecto equivocado, puedes trasladarla a otro grupo o eliminarla.
+            </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
+            <label className="mb-1 block text-xs font-semibold text-slate-700">
               Seleccionar Proyecto de Destino:
             </label>
             <select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-indigo-500"
+              className="w-full border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-800 outline-none transition focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -74,7 +89,7 @@ export const ReassignMinuteModal: React.FC<ReassignMinuteModalProps> = ({
           <div className="flex flex-col gap-2 pt-2">
             <button
               onClick={handleConfirmMove}
-              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center space-x-1.5 transition shadow-lg shadow-indigo-600/20"
+              className="flex w-full items-center justify-center space-x-1.5 bg-[#0D9488] py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#0F766E]"
             >
               <RefreshCw className="h-4 w-4" />
               <span>Mover Acta al Proyecto Seleccionado</span>
@@ -82,14 +97,15 @@ export const ReassignMinuteModal: React.FC<ReassignMinuteModalProps> = ({
 
             <button
               onClick={handleConfirmDelete}
-              className="w-full py-2.5 rounded-xl bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-bold flex items-center justify-center space-x-1.5 transition"
+              className="flex w-full items-center justify-center space-x-1.5 border border-rose-200 bg-rose-50 py-2.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
             >
               <Trash2 className="h-4 w-4" />
-              <span>Eliminar Acta Definativamente</span>
+              <span>Eliminar Acta Definitivamente</span>
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

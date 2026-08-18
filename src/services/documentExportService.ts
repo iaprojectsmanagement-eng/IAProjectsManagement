@@ -88,7 +88,7 @@ const makeDocx = async (document: ProjectDocument) => {
     spacing: { after: block.kind === 'title' ? 260 : 140 },
     children: [new TextRun({ text: block.text, bold: block.kind === 'title' || block.kind === 'heading' })],
   }));
-  const output = new Document({ creator: 'Project Hub', title: document.title, description: `Documento v${document.version}`, sections: [{ properties: {}, children }] });
+  const output = new Document({ creator: 'Projects Management', title: document.title, description: `Documento v${document.version}`, sections: [{ properties: {}, children }] });
   return Packer.toBlob(output);
 };
 

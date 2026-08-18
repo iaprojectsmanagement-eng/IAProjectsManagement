@@ -48,6 +48,17 @@ describe('Supabase deployment contracts', () => {
     expect(sql).toContain('public.can_access_project((storage.foldername(name))[1]::uuid)');
   });
 
+  it('limits link changes to an authorized project and lets a team resolve its own issues', () => {
+    const sql = read('supabase/migrations/20260817_project_collaboration_controls.sql');
+    expect(sql).toContain('CREATE OR REPLACE FUNCTION public.set_project_links');
+    expect(sql).toContain("RAISE EXCEPTION 'PROJECT_ACCESS_DENIED'");
+    expect(sql).toContain('GRANT EXECUTE ON FUNCTION public.set_project_links');
+    expect(sql).toContain('CREATE POLICY issues_update_project');
+    expect(sql).toContain('ISSUE_IDENTITY_IMMUTABLE');
+    expect(sql).toContain('CREATE OR REPLACE FUNCTION public.assign_student_to_project');
+    expect(sql).not.toContain('assigned_count >= target_project.max_students');
+  });
+
   it('limits AI requests without retaining prompt content', () => {
     const sql = read('supabase/migrations/20260810_ai_usage_limits.sql');
     const helper = read('supabase/functions/_shared/openai.ts');
@@ -57,7 +68,40 @@ describe('Supabase deployment contracts', () => {
     expect(sql).not.toContain('raw_text TEXT');
     expect(sql).not.toContain('prompt TEXT');
     expect(helper).toContain('store: false');
-    expect(helper).toContain('gpt-5-nano');
+    expect(helper).toContain('OPENAI_MODEL = "gpt-5.6-luna"');
+    expect(helper).toContain('reasoning: { effort: "medium" }');
+    expect(helper).toContain('REQUEST_TIMEOUT_MS');
+    expect(helper).toContain('OPENAI_REFUSAL');
+    expect(helper).toContain('OPENAI_INVALID_STRUCTURED_OUTPUT');
+  });
+
+  it('enforces the confirmed AI windows and records private management incidents', () => {
+    const sql = read('supabase/migrations/20260817_ai_limit_incidents_and_retention.sql');
+    const helper = read('supabase/functions/_shared/openai.ts');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.ai_limit_incidents');
+    expect(sql).toContain('ai_limit_incidents_read_management');
+    expect(sql).toContain('used_calls >= 3');
+    expect(sql).toContain('used_calls >= 10');
+    expect(sql).toContain('used_calls >= 20');
+    expect(sql).toContain('pg_advisory_xact_lock');
+    expect(sql).toContain("bucket_id IN ('project-transcripts', 'project-source-files')");
+    expect(helper).toContain('Límite de 3 llamadas por minuto excedido');
+    expect(helper).toContain('AI_QUOTA_${result.quota.toUpperCase()}');
+  });
+
+  it('versions the trusted login limit and keeps client protection credential-free', () => {
+    const config = read('supabase/config.toml');
+    const auth = read('src/context/AuthContext.tsx');
+    const limiter = read('src/services/clientRateLimit.ts');
+    const sync = read('src/services/syncService.ts');
+    expect(config).toContain('enable_signup = false');
+    expect(config).toContain('sign_in_sign_ups = 10');
+    expect(auth).toContain('claimLoginAttempt');
+    expect(auth).toContain('clearLoginAttempts');
+    expect(limiter).not.toContain('password');
+    expect(limiter).not.toContain('email');
+    expect(sync).toContain('MIN_BOOTSTRAP_INTERVAL_MS');
+    expect(sync).toContain('bootstrapPromise');
   });
 
   it('binds every institutional template to its own generation function', () => {
@@ -84,6 +128,9 @@ describe('Supabase deployment contracts', () => {
     expect(workflow).toContain("supabase.rpc('create_generated_document'");
     expect(workflow).toContain("supabase.rpc('save_document_revision'");
     expect(workflow).toContain('currentHtml: detached.promptHtml');
+    expect(workflow).toContain('SOURCE_FILE_PROJECT_MISMATCH');
+    expect(workflow).toContain('validateSourceFiles(body.sourceFiles || [], projectId)');
+    expect(workflow).toContain('validateGeneratedDocument');
   });
 
   it('versions documents and protects source/PDF storage with project RLS', () => {

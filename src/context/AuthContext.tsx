@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserRole } from '../types';
+import { claimLoginAttempt, clearLoginAttempts, loginRateLimitMessage } from '../services/clientRateLimit';
 import { supabaseClient } from '../services/supabaseClient';
 
 interface AuthContextType {
@@ -57,10 +58,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     if (!supabaseClient) throw new Error('Supabase no está configurado en este entorno.');
+    const rateLimit = claimLoginAttempt();
+    if (!rateLimit.allowed) throw new Error(loginRateLimitMessage(rateLimit.retryAfterMs));
     const suppliedCode = password.trim();
     const normalizedPassword = /^[aA]\d+$/.test(suppliedCode) ? `A${suppliedCode.slice(1)}` : password;
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email.trim(), password: normalizedPassword });
-    if (error) { setIsLoading(false); throw new Error(error.message); }
+    if (error) {
+      setIsLoading(false);
+      if (/rate limit|too many requests|429/i.test(error.message)) {
+        throw new Error('El servicio de autenticación limitó los intentos desde esta red. Espera unos minutos antes de volver a intentarlo.');
+      }
+      throw new Error(error.message);
+    }
+    clearLoginAttempts();
     await loadUser(data.user);
   };
   const logout = async () => {

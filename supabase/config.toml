@@ -1,0 +1,11 @@
+project_id = "herramienta-seguimiento-proyectos"
+
+[auth]
+# La plataforma trabaja con usuarios precargados: no debe exponer registro público.
+enable_signup = false
+
+[auth.rate_limit]
+# Límite confiable por IP: inicios de sesión y registros por cada cinco minutos.
+sign_in_sign_ups = 10
+# Evita ráfagas accidentales de renovaciones de sesión sin penalizar la navegación normal.
+token_refresh = 120

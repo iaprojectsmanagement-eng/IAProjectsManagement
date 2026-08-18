@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { claimAIQuota, finishAIQuota, openAIConfigured, OPENAI_MODEL, requestOpenAIJson } from './openai.ts';
+import { aiQuotaMessage, claimAIQuota, finishAIQuota, isAIQuotaError, openAIConfigured, openAIModel, requestOpenAIJson } from './openai.ts';
 
 export type DocumentType = 'contexto_proyecto' | 'plan_actividades' | 'acta_reunion' | 'reporte_entregables';
 
@@ -28,6 +28,14 @@ const sanitizeGeneratedHtml = (html: string) => html
   .replace(/<meta\b[^>]*http-equiv[^>]*>/gi, '')
   .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
   .replace(/javascript:/gi, '');
+
+const validateGeneratedDocument = (value: unknown) => {
+  const document = value as { title?: unknown; html?: unknown } | null;
+  if (!document || typeof document.title !== 'string' || typeof document.html !== 'string' || document.title.length > 240 || !document.html.trim() || document.html.length > 180_000) {
+    throw new Error('OPENAI_INVALID_STRUCTURED_OUTPUT');
+  }
+  return document as { title: string; html: string };
+};
 
 const detachEmbeddedImages = (html: string) => {
   const images: string[] = [];
@@ -114,7 +122,7 @@ const loadContext = async (supabase: any, projectId: string) => {
   };
 };
 
-const validateSourceFiles = (value: unknown) => {
+const validateSourceFiles = (value: unknown, projectId: string) => {
   if (!Array.isArray(value) || value.length > 8) throw new Error('SOURCE_FILES_INVALID');
   return value.map((item: any) => ({
     name: safeText(item?.name, 160),
@@ -122,7 +130,12 @@ const validateSourceFiles = (value: unknown) => {
     size: Math.max(0, Math.min(Number(item?.size || 0), 15_000_000)),
     storagePath: safeText(item?.storagePath, 500),
     extractedChars: Math.max(0, Math.min(Number(item?.extractedChars || 0), 120_000)),
-  })).filter((item) => item.name && item.storagePath);
+  })).filter((item) => item.name && item.storagePath).map((item) => {
+    // Metadata can only refer to files stored under this authorized project.
+    if (!item.storagePath.startsWith(`${projectId}/`) || item.storagePath.includes('..')) throw new Error('SOURCE_FILE_PROJECT_MISMATCH');
+    if (!/\.(pdf|docx|txt|vtt)$/i.test(item.name)) throw new Error('SOURCE_FILE_TYPE_INVALID');
+    return item;
+  });
 };
 
 export const handleDocumentGeneration = async (request: Request, config: DocumentGeneratorConfig) => {
@@ -140,7 +153,7 @@ export const handleDocumentGeneration = async (request: Request, config: Documen
     const documentId = safeText(body.documentId, 80);
     const sourceText = safeText(body.sourceText, 120_000);
     const userInstructions = safeText(body.instructions, 1_500);
-    const sourceFiles = validateSourceFiles(body.sourceFiles || []);
+    const sourceFiles = validateSourceFiles(body.sourceFiles || [], projectId);
     if (!projectId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(documentId)) return json({ error: 'projectId y documentId UUID son obligatorios' }, 400);
     if (config.documentType === 'acta_reunion' && sourceText.length < 40) return json({ error: 'La transcripción es demasiado corta para crear un acta.' }, 400);
     const { data: canAccess } = await supabase.rpc('can_access_project', { target_project_id: projectId });
@@ -162,7 +175,7 @@ export const handleDocumentGeneration = async (request: Request, config: Documen
     let model: string | null = null;
     if (openAIConfigured()) {
       const detached = detachEmbeddedImages(templateHtml);
-      model = OPENAI_MODEL;
+      model = openAIModel();
       const promptPayload = JSON.stringify({
         documentType: config.documentType,
         projectContext: snapshot,
@@ -183,9 +196,10 @@ export const handleDocumentGeneration = async (request: Request, config: Documen
           input: promptPayload,
           maxOutputTokens: 12_000,
         });
-        const html = restoreEmbeddedImages(sanitizeGeneratedHtml(result.value.html), detached.images);
+        const generated = validateGeneratedDocument(result.value);
+        const html = restoreEmbeddedImages(sanitizeGeneratedHtml(generated.html), detached.images);
         if (!html.includes('document-container') || !html.includes('<style') || !html.includes('<body')) throw new Error('OPENAI_INVALID_DOCUMENT_HTML');
-        draft = { title: safeText(result.value.title, 240) || draft.title, html };
+        draft = { title: safeText(generated.title, 240) || draft.title, html };
         provider = 'openai';
         model = result.model;
         await finishAIQuota(supabase, requestId, 'succeeded', result.outputTokens);
@@ -212,7 +226,7 @@ export const handleDocumentGeneration = async (request: Request, config: Documen
   } catch (error) {
     const code = error instanceof Error ? error.message : 'UNEXPECTED_ERROR';
     console.error('document-generation', config.documentType, code);
-    if (code === 'AI_QUOTA_REACHED') return json({ error: 'Límite de IA alcanzado. Espera antes de volver a generar.' }, 429);
+    if (isAIQuotaError(code)) return json({ error: aiQuotaMessage(code), code }, 429);
     if (code.startsWith('OPENAI_')) return json({ error: 'OpenAI no pudo generar un HTML válido. No se guardó un documento incompleto.' }, 502);
     if (code.includes('DOCUMENT_') || code.includes('SOURCE_')) return json({ error: code }, 400);
     return json({ error: 'No fue posible generar y guardar el documento' }, 500);
@@ -240,7 +254,7 @@ export const handleDocumentRevision = async (request: Request) => {
     if (document.status === 'aprobado') return json({ error: 'Un documento aprobado está bloqueado. El monitor debe devolverlo a revisión.' }, 409);
 
     const detached = detachEmbeddedImages(String(document.html_content));
-    const model = OPENAI_MODEL;
+    const model = openAIModel();
     const promptPayload = JSON.stringify({ documentType: document.document_type, requestedChange: changeRequest, currentHtml: detached.promptHtml });
     const requestId = await claimAIQuota(supabase, document.project_id, 'document', model, promptPayload.length);
     try {
@@ -251,9 +265,10 @@ export const handleDocumentRevision = async (request: Request) => {
         input: promptPayload,
         maxOutputTokens: 12_000,
       });
-      const html = restoreEmbeddedImages(sanitizeGeneratedHtml(result.value.html), detached.images);
+      const generated = validateGeneratedDocument(result.value);
+      const html = restoreEmbeddedImages(sanitizeGeneratedHtml(generated.html), detached.images);
       if (!html.includes('document-container') || !html.includes('<style') || !html.includes('<body')) throw new Error('OPENAI_INVALID_DOCUMENT_HTML');
-      const title = safeText(result.value.title, 240) || document.title;
+      const title = safeText(generated.title, 240) || document.title;
       const { data, error } = await supabase.rpc('save_document_revision', {
         target_document_id: documentId,
         target_title: title,
@@ -273,7 +288,7 @@ export const handleDocumentRevision = async (request: Request) => {
   } catch (error) {
     const code = error instanceof Error ? error.message : 'UNEXPECTED_ERROR';
     console.error('document-revision', code);
-    if (code === 'AI_QUOTA_REACHED') return json({ error: 'Límite de IA alcanzado. Espera antes de solicitar otro cambio.' }, 429);
+    if (isAIQuotaError(code)) return json({ error: aiQuotaMessage(code), code }, 429);
     if (code.includes('APPROVED')) return json({ error: 'El documento aprobado no admite revisiones.' }, 409);
     if (code.startsWith('OPENAI_')) return json({ error: 'OpenAI no pudo aplicar el cambio sin dañar la plantilla. Se conservó la versión anterior.' }, 502);
     return json({ error: 'No fue posible revisar el documento' }, 500);

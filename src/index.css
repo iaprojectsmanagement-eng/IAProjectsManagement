@@ -3,415 +3,426 @@
 @tailwind utilities;
 
 :root {
-  /* The named families resolve to the supplied fonts when they are installed
-     or added to public/fonts; the fallbacks keep the UI readable in preview
-     and CI environments where proprietary font files are unavailable. */
-  --font-body: "SK Curiosity SemiLight", "SK Curiosity", "Segoe UI", sans-serif;
-  --font-display: "Mazzald H Bold", "Mazzald H", Arial, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-display: "Mazzald H Bold", "Inter", "Segoe UI", sans-serif;
+
+  /* Semantic Brand & Academic Palette */
+  --palette-navy: #0E2C40;
+  --palette-blue: #1A4A5A;
+  --palette-teal: #0D9488;
+  --palette-teal-hover: #0F766E;
+  --palette-teal-light: #F0FDFA;
+  --palette-green: #10B981;
+  --palette-green-light: #ECFDF5;
+  --palette-gold: #F59E0B;
+  --palette-gold-light: #FFFBEB;
+  --palette-red: #E11D48;
+  --palette-red-light: #FFF1F2;
+  --palette-slate-surface: #F8FAFC;
+  --palette-white: #FFFFFF;
+
+  /* App Shell Tokens */
+  --ui-canvas: #F8FAFC;
+  --ui-surface: #FFFFFF;
+  --ui-ink: #0F172A;
+  --ui-muted: #64748B;
+  --ui-border: #E2E8F0;
+  --ui-border-light: #F1F5F9;
+  --ui-accent: #0D9488;
+  --ui-accent-strong: #0F766E;
+  --ui-focus: #0D9488;
+  --ui-danger: #E11D48;
+  --ui-shadow-sm: 0 1px 2px 0 rgba(14, 44, 64, 0.04);
+  --ui-shadow: 0 4px 16px -2px rgba(14, 44, 64, 0.06), 0 2px 6px -1px rgba(14, 44, 64, 0.03);
+  --ui-shadow-lg: 0 16px 32px -4px rgba(14, 44, 64, 0.10), 0 6px 12px -2px rgba(14, 44, 64, 0.04);
+  --ui-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Strict Square Corners System */
+*,
+*::before,
+*::after {
+  border-radius: 0px !important;
 }
 
 @layer base {
-  body {
-    @apply bg-[#f5f7ff] text-slate-900 font-sans antialiased;
-    font-family: var(--font-body);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  html {
+    color-scheme: light;
   }
 
-  h1, h2, h3, h4, h5, h6,
-  .font-black, .font-extrabold { font-family: var(--font-display); }
-  body { font-weight: 400; }
+  body {
+    background-color: var(--ui-canvas);
+    color: var(--ui-ink);
+    font-family: var(--font-body);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--palette-navy);
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background-color: #CCFBF1;
+    color: #0F766E;
+  }
 }
 
-@layer components {
-  .icesi-topbar { background: #514ff0; }
-  .icesi-mark { width: 34px; height: 34px; border: 3px dotted rgba(255, 255, 255, .96); border-radius: 9999px; box-shadow: inset 0 0 0 5px #514ff0; background: repeating-conic-gradient(from 0deg, #fff 0 3deg, transparent 3deg 13deg); }
-  .icesi-section-label { background: #514ff0; color: white; padding: 10px 14px; font-size: 12px; font-weight: 800; white-space: nowrap; }
-  .icesi-utility-button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d9dded; background: white; color: #252346; padding: 7px 11px; font-size: 11px; font-weight: 700; transition: .18s ease; white-space: nowrap; }
-  .icesi-utility-button:hover { border-color: #514ff0; color: #514ff0; transform: translateY(-1px); }
-  .icesi-footer { background: #514ff0; color: white; }
-  .icesi-footer-title { font-size: 13px; font-weight: 800; }
-  .icesi-footer-title::after { content: ''; display: block; width: 46px; height: 2px; margin-top: 12px; background: #e9f534; }
-  .icesi-hero { background: #514ff0; color: white; padding: 30px; position: relative; overflow: hidden; }
-  .icesi-hero::after { content: ''; position: absolute; right: -42px; bottom: -52px; width: 180px; height: 180px; border: 28px solid #e9f534; border-radius: 999px; opacity: .9; }
-  .icesi-hero-kicker { color: #e9f534; font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+/* Custom Scrollbars - Square */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-/* Light editorial skin for existing functional components. */
-.icesi-workspace .bg-slate-950 { background-color: #f5f7ff !important; }
-.icesi-workspace .bg-slate-900, .icesi-workspace .bg-slate-900\/80, .icesi-workspace .bg-slate-900\/60 { background-color: #fff !important; }
-.icesi-workspace .bg-slate-800 { background-color: #eef0f7 !important; }
-.icesi-workspace .border-slate-900, .icesi-workspace .border-slate-800, .icesi-workspace .border-slate-800\/80, .icesi-workspace .border-slate-700 { border-color: #dce1ef !important; }
-.icesi-workspace .text-white, .icesi-workspace .text-slate-100 { color: #111225 !important; }
-.icesi-workspace .text-slate-200 { color: #222642 !important; }
-.icesi-workspace .text-slate-300 { color: #3d4662 !important; }
-.icesi-workspace .text-slate-400 { color: #62708e !important; }
-.icesi-workspace .text-slate-500, .icesi-workspace .text-slate-600 { color: #7c88a4 !important; }
-.icesi-workspace .bg-indigo-600, .icesi-workspace .bg-indigo-500 { background-color: #514ff0 !important; }
-.icesi-workspace .bg-indigo-600 .text-white, .icesi-workspace .bg-indigo-500 .text-white { color: #fff !important; }
-.icesi-workspace .bg-indigo-950, .icesi-workspace .bg-indigo-950\/80, .icesi-workspace .bg-indigo-950\/60 { background-color: #eff0ff !important; }
-.icesi-workspace .bg-gradient-to-r { background: #514ff0 !important; }
-.icesi-workspace .bg-gradient-to-r .text-white, .icesi-workspace .bg-gradient-to-r .text-slate-100, .icesi-workspace .bg-gradient-to-r .text-slate-300 { color: #fff !important; }
-.icesi-workspace .border-indigo-800, .icesi-workspace .border-indigo-800\/60, .icesi-workspace .border-indigo-800\/80 { border-color: #bfc2ff !important; }
-.icesi-workspace .text-indigo-300, .icesi-workspace .text-indigo-400 { color: #514ff0 !important; }
-.icesi-workspace input, .icesi-workspace select, .icesi-workspace textarea { background-color: #fff !important; color: #1e2441 !important; border-color: #cfd5e5 !important; border-radius: 0 !important; }
-.icesi-workspace button { border-radius: 0 !important; }
-.icesi-workspace .rounded-2xl { border-radius: 0 !important; box-shadow: 0 8px 20px rgba(35, 39, 79, .06); }
-.icesi-workspace .rounded-xl, .icesi-workspace .rounded-lg { border-radius: 0 !important; }
-.icesi-workspace .shadow-lg, .icesi-workspace .shadow-xl { box-shadow: 0 10px 24px rgba(35, 39, 79, .08) !important; }
-.icesi-workspace h2, .icesi-workspace h3 { letter-spacing: -.025em; }
-
-/* Campus image backdrop: it belongs only to the working area. The fixed
-   navigation remains an intentionally solid white anchor for readability. */
-.icesi-main-surface {
-  position: relative;
-  isolation: isolate;
-  background: transparent !important;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.icesi-main-surface::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: linear-gradient(rgba(246, 247, 251, .46), rgba(246, 247, 251, .46)), url('/fondo.jpg');
-  background-position: center;
-  background-size: cover;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  opacity: .68;
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 0px !important;
 }
 
-/* Let the photo breathe through cards without sacrificing contrast. */
-.icesi-main-surface .bg-white,
-.icesi-main-surface .bg-slate-900,
-.icesi-main-surface .bg-slate-900\/80,
-.icesi-main-surface .bg-slate-900\/60 { background-color: rgba(255, 255, 255, .86) !important; }
-.icesi-main-surface .bg-slate-50 { background-color: rgba(248, 250, 252, .78) !important; }
-.icesi-main-surface .bg-slate-100 { background-color: rgba(241, 245, 249, .76) !important; }
-.icesi-main-surface .bg-indigo-50,
-.icesi-main-surface .bg-indigo-950,
-.icesi-main-surface .bg-indigo-950\/80,
-.icesi-main-surface .bg-indigo-950\/60 { background-color: rgba(239, 240, 255, .78) !important; }
-.icesi-main-surface .bg-rose-50 { background-color: rgba(255, 241, 242, .82) !important; }
-.icesi-main-surface .bg-amber-50 { background-color: rgba(255, 251, 235, .82) !important; }
-.icesi-main-surface .bg-emerald-50 { background-color: rgba(236, 253, 245, .82) !important; }
-.icesi-main-surface input,
-.icesi-main-surface select,
-.icesi-main-surface textarea { background-color: rgba(255, 255, 255, .9) !important; }
-
-/* The visual language is deliberately orthogonal: every component uses
-   square 90-degree corners, including legacy Tailwind utility classes. */
-*, *::before, *::after { border-radius: 0 !important; }
-
-/* Final visual system: only the approved palette and white are used. */
-:root {
-  --palette-navy: #0E2C40;
-  --palette-blue: #1A4A5A;
-  --palette-teal: #148D8D;
-  --palette-green: #C1E1A7;
-  --palette-gold: #EFBC75;
-  --palette-red: #A85F63;
-  --palette-white: #FFFFFF;
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 
-body { background: var(--palette-white) !important; color: var(--palette-navy) !important; }
-.icesi-workspace { background: var(--palette-white) !important; color: var(--palette-navy) !important; }
-.icesi-workspace > footer { display: none !important; }
-
-/* The new illustration is stronger and the content panels are opaque. */
-.icesi-main-surface::before {
-  background-image: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), url('/fondo2.png');
-  opacity: .9;
+/* Focus Ring Accessibility */
+:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+  border-radius: 0px !important;
 }
 
-/* Mantén el lienzo completo y fijo; solo las tarjetas deben desplazarse. */
-.icesi-main-surface {
-  min-height: calc(100vh - 4rem);
-  background-image: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), url('/fondo2.png') !important;
-  background-position: center;
-  background-size: cover;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-}
-.icesi-main-surface::before { display: none; }
-.icesi-main-surface .bg-white,
-.icesi-main-surface .bg-slate-50,
-.icesi-main-surface .bg-slate-100,
-.icesi-main-surface .bg-indigo-50,
-.icesi-main-surface .bg-indigo-50\/20,
-.icesi-main-surface .bg-indigo-50\/40,
-.icesi-main-surface .bg-indigo-950\/60,
-.icesi-main-surface .bg-rose-50,
-.icesi-main-surface .bg-rose-50\/50,
-.icesi-main-surface .bg-amber-50,
-.icesi-main-surface .bg-emerald-50 { background-color: var(--palette-white) !important; }
-
-/* Dark surfaces use the navy/blue pair and always get white foreground text. */
-.icesi-workspace .bg-slate-950,
-.icesi-workspace .bg-slate-900,
-.icesi-workspace .bg-slate-900\/80,
-.icesi-workspace .bg-slate-900\/60,
-.icesi-workspace .bg-indigo-950,
-.icesi-workspace .bg-indigo-900,
-.icesi-workspace .bg-indigo-900\/80 { background-color: var(--palette-navy) !important; color: var(--palette-white) !important; }
-.icesi-workspace .bg-slate-800,
-.icesi-workspace .bg-slate-700,
-.icesi-workspace .bg-indigo-800 { background-color: var(--palette-blue) !important; color: var(--palette-white) !important; }
-.icesi-workspace .bg-slate-950 [class*="text-"],
-.icesi-workspace .bg-slate-900 [class*="text-"],
-.icesi-workspace .bg-slate-900\/80 [class*="text-"],
-.icesi-workspace .bg-slate-900\/60 [class*="text-"],
-.icesi-workspace .bg-indigo-950 [class*="text-"],
-.icesi-workspace .bg-indigo-900 [class*="text-"],
-.icesi-workspace .bg-indigo-800 [class*="text-"] { color: var(--palette-white) !important; }
-
-/* Teal is the primary action color; gold and green are reserved for status
-   and emphasis badges. Each foreground is chosen for its surface contrast. */
-.icesi-workspace .bg-indigo-600,
-.icesi-workspace .bg-indigo-500,
-.icesi-workspace .bg-emerald-600,
-.icesi-workspace .bg-emerald-500,
-.icesi-workspace .bg-rose-700 { background-color: var(--palette-red) !important; color: var(--palette-white) !important; }
-.icesi-workspace .bg-rose-600 { background-color: var(--palette-red) !important; color: var(--palette-white) !important; }
-.icesi-workspace .bg-rose-100,
-.icesi-workspace .bg-amber-500,
-.icesi-workspace .bg-amber-100 { background-color: var(--palette-gold) !important; color: var(--palette-navy) !important; }
-.icesi-workspace .bg-emerald-100,
-.icesi-workspace .bg-indigo-100,
-.icesi-workspace .bg-indigo-50 { background-color: var(--palette-green) !important; color: var(--palette-navy) !important; }
-.icesi-workspace .bg-emerald-100 [class*="text-"],
-.icesi-workspace .bg-indigo-100 [class*="text-"],
-.icesi-workspace .bg-indigo-50 [class*="text-"],
-.icesi-workspace .bg-rose-100 [class*="text-"],
-.icesi-workspace .bg-amber-100 [class*="text-"] { color: var(--palette-navy) !important; }
-.icesi-workspace .bg-indigo-600 [class*="text-"],
-.icesi-workspace .bg-indigo-500 [class*="text-"],
-.icesi-workspace .bg-emerald-600 [class*="text-"],
-.icesi-workspace .bg-emerald-500 [class*="text-"],
-.icesi-workspace .bg-rose-700 [class*="text-"] { color: var(--palette-white) !important; }
-
-/* Replace legacy purple, gray and near-black text tokens with the palette. */
-.icesi-workspace .text-white { color: var(--palette-navy) !important; }
-.icesi-workspace .text-slate-100,
-.icesi-workspace .text-slate-200,
-.icesi-workspace .text-slate-300,
-.icesi-workspace .text-slate-400,
-.icesi-workspace .text-slate-500,
-.icesi-workspace .text-slate-600,
-.icesi-workspace .text-slate-700,
-.icesi-workspace .text-slate-900 { color: var(--palette-blue) !important; }
-.icesi-workspace .text-indigo-100,
-.icesi-workspace .text-indigo-200,
-.icesi-workspace .text-indigo-300,
-.icesi-workspace .text-indigo-400,
-.icesi-workspace .text-indigo-600,
-.icesi-workspace .text-indigo-700,
-.icesi-workspace .text-indigo-900 { color: var(--palette-teal) !important; }
-.icesi-workspace .text-rose-200,
-.icesi-workspace .text-rose-300,
-.icesi-workspace .text-rose-400,
-.icesi-workspace .text-rose-500,
-.icesi-workspace .text-rose-600,
-.icesi-workspace .text-rose-700,
-.icesi-workspace .text-rose-900 { color: var(--palette-red) !important; }
-.icesi-workspace .text-amber-300,
-.icesi-workspace .text-amber-400,
-.icesi-workspace .text-amber-600,
-.icesi-workspace .text-amber-700,
-.icesi-workspace .text-amber-800 { color: var(--palette-navy) !important; }
-.icesi-workspace .text-emerald-300,
-.icesi-workspace .text-emerald-400,
-.icesi-workspace .text-emerald-600,
-.icesi-workspace .text-emerald-700,
-.icesi-workspace .text-emerald-800,
-.icesi-workspace .text-sky-300,
-.icesi-workspace .text-sky-400,
-.icesi-workspace .text-purple-300,
-.icesi-workspace .text-purple-400 { color: var(--palette-teal) !important; }
-
-/* Dark components restore white text after the token normalization above. */
-.icesi-workspace .bg-slate-950 [class*="text-"],
-.icesi-workspace .bg-slate-900 [class*="text-"],
-.icesi-workspace .bg-slate-900\/80 [class*="text-"],
-.icesi-workspace .bg-slate-900\/60 [class*="text-"],
-.icesi-workspace .bg-slate-800 [class*="text-"],
-.icesi-workspace .bg-slate-700 [class*="text-"],
-.icesi-workspace .bg-indigo-950 [class*="text-"],
-.icesi-workspace .bg-indigo-900 [class*="text-"],
-.icesi-workspace .bg-indigo-800 [class*="text-"] { color: var(--palette-white) !important; }
-
-/* Softer hierarchy: keep headings distinct but remove the wall of bold text. */
-.icesi-workspace .font-black,
-.icesi-workspace .font-bold { font-weight: 400 !important; }
-.icesi-workspace .font-black,
-.icesi-workspace .font-extrabold { font-weight: 500 !important; }
-.icesi-workspace .font-semibold { font-weight: 400 !important; }
-.icesi-workspace h1,
-.icesi-workspace h2,
-.icesi-workspace h3,
-.icesi-workspace h4,
-.icesi-workspace h5,
-.icesi-workspace h6 { font-weight: 500 !important; }
-.icesi-workspace .shadow-sm,
-.icesi-workspace .shadow,
-.icesi-workspace .shadow-lg,
-.icesi-workspace .shadow-xl { box-shadow: 0 8px 22px rgba(14, 44, 64, .12) !important; }
-.icesi-workspace input,
-.icesi-workspace select,
-.icesi-workspace textarea { border-color: var(--palette-blue) !important; color: var(--palette-navy) !important; background: var(--palette-white) !important; }
-
-[class*="bg-[#514ff0]"] { background-color: var(--palette-teal) !important; }
-.icesi-workspace [class*="text-[#514ff0]"] { color: var(--palette-teal) !important; }
-.icesi-workspace [class*="bg-[#514ff0]"][class*="text-[#514ff0]"],
-.icesi-workspace [class*="bg-[#514ff0]"] [class*="text-[#514ff0]"] { color: var(--palette-white) !important; }
-.icesi-workspace [class*="bg-[#514ff0]"] [class*="text-white"],
-.icesi-workspace [class*="bg-[#514ff0]"][class*="text-white"] { color: var(--palette-white) !important; }
-.icesi-workspace .bg-slate-50,
-.icesi-workspace .bg-slate-100 { background-color: var(--palette-white) !important; }
-.icesi-workspace [class*="border-slate"],
-.icesi-workspace [class*="border-indigo"],
-.icesi-workspace [class*="border-rose"],
-.icesi-workspace [class*="border-amber"] { border-color: rgba(26, 74, 90, .24) !important; }
-.icesi-topbar,
-.icesi-footer,
-.icesi-hero { background: var(--palette-teal) !important; }
-.icesi-hero::after { border-color: var(--palette-gold); }
-.icesi-hero-kicker,
-.icesi-footer-title::after { color: var(--palette-gold); background-color: var(--palette-gold); }
-
-/* Status markers are intentionally quiet: semantic color, bold label and a
-   tiny matching icon, with no colored capsule behind them. */
+/* Status Markers / Badges System - Sharp Architectural Style */
 .status-marker {
   display: inline-flex;
   align-items: center;
-  gap: .35rem;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  font-size: .68rem;
-  font-weight: 700 !important;
-  line-height: 1.2;
-  letter-spacing: .04em;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0px !important;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
+  white-space: nowrap;
+  transition: all 0.15s ease;
 }
-.status-marker--red,
-.status-marker--critical { color: var(--palette-red) !important; }
-.status-marker--amber { color: var(--palette-gold) !important; }
-.status-marker--green,
-.status-marker--success { color: var(--palette-teal) !important; }
-.status-marker--indigo,
-.status-marker--slate,
-.status-marker--neutral,
-.status-marker--info { color: var(--palette-blue) !important; }
-.status-marker svg { color: currentColor !important; flex: 0 0 auto; }
-.home-dashboard > .mb-5:first-child { display: none !important; }
-.projects-view > .mb-5 { display: none !important; }
-/* The project form is promoted to a true modal without changing its data
-   flow: the unique code placeholder gives it a stable, semantic selector. */
-body:has(input[placeholder="Ej. 21_ANALITICA"])::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgba(14, 44, 64, .34);
-  backdrop-filter: blur(6px);
-  pointer-events: auto;
-}
-body:has(input[placeholder="Ej. 21_ANALITICA"])::before { display: none; }
-body:has(input[placeholder="Ej. 21_ANALITICA"]) .icesi-main-surface::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  background: rgba(14, 44, 64, .34);
-  backdrop-filter: blur(6px);
-  pointer-events: auto;
-}
-body:has(input[placeholder="Ej. 21_ANALITICA"]) header,
-body:has(input[placeholder="Ej. 21_ANALITICA"]) aside,
-body:has(input[placeholder="Ej. 21_ANALITICA"]) footer,
-body:has(input[placeholder="Ej. 21_ANALITICA"]) nav { filter: blur(6px); }
-body:has(input[placeholder="Ej. 21_ANALITICA"]) form:has(input[placeholder="Ej. 21_ANALITICA"]) {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  z-index: 50;
-  width: min(680px, calc(100vw - 2rem));
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-  transform: translate(-50%, -50%);
-  margin: 0 !important;
-  background: var(--palette-white) !important;
-  border: 1px solid var(--palette-blue) !important;
-  padding: 1.25rem !important;
-  box-shadow: 0 24px 70px rgba(14, 44, 64, .28) !important;
-}
-body:has(input[placeholder="Ej. 21_ANALITICA"]) form:has(input[placeholder="Ej. 21_ANALITICA"])::before {
-  content: 'Nuevo proyecto';
-  display: block;
-  margin-bottom: 1rem;
-  color: var(--palette-navy);
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-.risk-filter-trigger {
-  min-height: 42px;
-  padding: .6rem .75rem;
-  border: 1px solid var(--palette-teal);
-  background: var(--palette-white);
-  color: var(--palette-navy);
-}
-.risk-filter-menu {
-  padding: .35rem;
-  border: 1px solid var(--palette-teal);
-  background: var(--palette-white);
-  box-shadow: 0 16px 30px rgba(14, 44, 64, .18);
-}
-.risk-filter-option { padding: .65rem .55rem; color: var(--palette-navy); }
-.risk-filter-option:hover,
-.risk-filter-option[aria-selected="true"] { background: var(--palette-green); }
 
-/* Legacy status spans that still carry a Tailwind background class receive
-   the same treatment without changing ordinary project/code labels. */
-.icesi-workspace span[class*="bg-rose-100"],
-.icesi-workspace span[class*="bg-amber-100"],
-.icesi-workspace span[class*="bg-emerald-100"],
-.icesi-workspace span[class*="bg-indigo-100"],
-.icesi-workspace span[class*="bg-slate-100"],
-.icesi-workspace span[class*="bg-rose-950"],
-.icesi-workspace span[class*="bg-amber-950"],
-.icesi-workspace span[class*="bg-emerald-950"] {
+.status-marker svg {
+  flex-shrink: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.status-marker--red,
+.status-marker--critical {
+  background-color: #FFE4E6;
+  color: #BE123C;
+  border: 1px solid #FECDD3;
+}
+
+.status-marker--amber {
+  background-color: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.status-marker--green,
+.status-marker--success {
+  background-color: #D1FAE5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.status-marker--indigo,
+.status-marker--info {
+  background-color: #E0E7FF;
+  color: #4338CA;
+  border: 1px solid #C7D2FE;
+}
+
+.status-marker--slate,
+.status-marker--neutral {
+  background-color: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+/* Risk Filter Custom Components */
+.risk-filter-trigger {
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 0px !important;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.risk-filter-trigger:hover {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 1px #0D9488;
+}
+
+.risk-filter-menu {
+  padding: 0.375rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 0px !important;
+  background: #FFFFFF;
+  box-shadow: var(--ui-shadow-lg);
+}
+
+.risk-filter-option {
+  padding: 0.5rem 0.625rem;
+  border-radius: 0px !important;
+  color: #0F172A;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+
+.risk-filter-option:hover,
+.risk-filter-option[aria-selected="true"] {
+  background: #F0FDFA;
+  color: #0F766E;
+}
+
+/* App Shell Components */
+.app-shell {
+  min-height: 100vh;
+  background-color: var(--ui-canvas);
+  color: var(--ui-ink);
+}
+
+.app-shell__header {
+  border-bottom: 1px solid var(--ui-border);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 3px 0 rgba(14, 44, 64, 0.03);
+  backdrop-filter: blur(12px);
+}
+
+.app-shell__topbar {
+  min-height: 4rem;
+}
+
+.app-shell__brand-mark {
+  border-radius: 0px !important;
+  background: linear-gradient(135deg, #0D9488, #0E2C40);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+  color: #FFFFFF;
+}
+
+.app-shell__product-name {
+  color: var(--palette-navy);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.app-shell__context,
+.app-shell__profile p:last-child {
+  color: var(--ui-muted);
+}
+
+.app-shell__sync {
   display: inline-flex;
   align-items: center;
-  gap: .35rem;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  font-weight: 700 !important;
+  gap: 0.375rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0px !important;
+  background: #F8FAFC;
+  padding: 0.25rem 0.625rem;
+  color: var(--ui-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
-.icesi-workspace span[class*="bg-rose-100"],
-.icesi-workspace span[class*="bg-rose-950"] { color: var(--palette-red) !important; }
-.icesi-workspace span[class*="bg-amber-100"],
-.icesi-workspace span[class*="bg-amber-950"] { color: var(--palette-gold) !important; }
-.icesi-workspace span[class*="bg-emerald-100"],
-.icesi-workspace span[class*="bg-emerald-950"] { color: var(--palette-teal) !important; }
-.icesi-workspace span[class*="bg-indigo-100"],
-.icesi-workspace span[class*="bg-slate-100"] { color: var(--palette-blue) !important; }
-.icesi-workspace span[class*="bg-rose-100"]::before,
-.icesi-workspace span[class*="bg-rose-950"]::before,
-.icesi-workspace span[class*="bg-amber-100"]::before,
-.icesi-workspace span[class*="bg-amber-950"]::before { content: '⚠'; }
-.icesi-workspace span[class*="bg-emerald-100"]::before,
-.icesi-workspace span[class*="bg-emerald-950"]::before { content: '✓'; }
-.icesi-workspace span[class*="bg-indigo-100"]::before,
-.icesi-workspace span[class*="bg-slate-100"]::before { content: '•'; }
-.icesi-workspace span.bg-rose-600 { background: transparent !important; padding: 0 !important; color: var(--palette-red) !important; }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--palette-white); }
-::-webkit-scrollbar-thumb { background: var(--palette-blue); border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background: var(--palette-teal); }
+.app-shell__sync::before {
+  content: '';
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 0px !important;
+  background: #94A3B8;
+}
+
+.app-shell__sync--synced::before {
+  background: #10B981;
+}
+
+.app-shell__sync--pending::before {
+  background: #F59E0B;
+  animation: app-shell-pulse 1.4s var(--ui-ease) infinite;
+}
+
+.app-shell__sync--error {
+  border-color: #FECDD3;
+  color: #BE123C;
+}
+
+.app-shell__sync--error::before {
+  background: #E11D48;
+}
+
+.app-shell__icon-button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 0px !important;
+  color: var(--ui-muted);
+  transition: all 0.15s var(--ui-ease);
+}
+
+.app-shell__icon-button:hover {
+  background: #F1F5F9;
+  color: var(--palette-navy);
+}
+
+.app-shell__notification-count {
+  border-radius: 0px !important;
+  background: #E11D48;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 2px #FFFFFF;
+}
+
+.app-shell__demo-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #CBD5E1;
+  border-radius: 0px !important;
+  background: #FFFFFF;
+  padding: 0.375rem 0.625rem;
+  color: var(--palette-teal);
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.15s var(--ui-ease);
+}
+
+.app-shell__demo-switch:hover {
+  border-color: var(--palette-teal);
+  background: #F0FDFA;
+}
+
+.app-shell__frame {
+  min-height: calc(100vh - 4rem);
+}
+
+.app-shell__sidebar {
+  border-right: 1px solid var(--ui-border);
+  background: #FFFFFF;
+}
+
+.app-shell__nav-label {
+  color: #94A3B8;
+}
+
+.app-shell__nav-item {
+  position: relative;
+  border-radius: 0px !important;
+  color: #475569;
+  transition: all 0.15s var(--ui-ease);
+}
+
+.app-shell__nav-item:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.app-shell__nav-item--active {
+  background: #0D9488 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.22) !important;
+}
+
+.app-shell__nav-item--active svg {
+  color: #FFFFFF !important;
+}
+
+.app-shell__nav-count {
+  border-radius: 0px !important;
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.app-shell__nav-count--active {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.app-shell__aside-note {
+  border: 1px solid #E2E8F0;
+  border-radius: 0px !important;
+  background: linear-gradient(135deg, #F8FAFC, #F0FDFA);
+  color: #64748B;
+}
+
+.app-shell__aside-note p:first-child {
+  color: var(--palette-navy);
+}
+
+.app-shell__main {
+  min-height: calc(100vh - 4rem);
+  background-color: var(--ui-canvas);
+  background-image: url('/fondo2.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.app-shell__mobile-nav {
+  border-top: 1px solid var(--ui-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -4px 16px rgba(14, 44, 64, 0.05);
+  backdrop-filter: blur(12px);
+}
+
+.app-shell__mobile-item {
+  border-radius: 0px !important;
+  color: var(--ui-muted);
+  transition: all 0.15s var(--ui-ease);
+}
+
+.app-shell__mobile-item--active {
+  background: #F0FDFA;
+  color: #0D9488;
+}
+
+@keyframes app-shell-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes app-shell-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (max-width: 1023px) {
+  .app-shell__main {
+    padding-bottom: 5.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

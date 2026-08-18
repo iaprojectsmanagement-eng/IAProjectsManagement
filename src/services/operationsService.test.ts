@@ -40,6 +40,16 @@ describe('operations service', () => {
     expect(() => OperationsService.updateMeetingStatus(meeting.id, 'cancelada', 'Cambio tardío')).toThrow(/No se puede cambiar/);
   });
 
+  it('cancels a scheduled meeting without requiring a reason and preserves access details', () => {
+    const project = OperationsService.getProjects()[0];
+    const meeting = OperationsService.createMeeting({ projectId: project.id, title: 'Sesión externa', startsAt: '2026-08-20T10:00:00', durationMinutes: 45, attendees: [], meetingUrl: 'https://teams.example.test/meeting', meetingPassword: 'clave-equipo', timezone: 'America/Bogota', status: 'programada' });
+    const cancelled = OperationsService.updateMeetingStatus(meeting.id, 'cancelada');
+    expect(cancelled?.status).toBe('cancelada');
+    expect(cancelled?.cancellationReason).toBeUndefined();
+    expect(toDatabase.meeting(cancelled!).meeting_url).toBe('https://teams.example.test/meeting');
+    expect(toDatabase.meeting(cancelled!).meeting_password).toBe('clave-equipo');
+  });
+
   it('persists Bogotá meeting time with its UTC-5 offset', () => {
     const project = OperationsService.getProjects()[0];
     const meeting = OperationsService.createMeeting({ projectId: project.id, title: 'Hora local', startsAt: '2026-08-20T15:00:00', durationMinutes: 45, attendees: [], timezone: 'America/Bogota', status: 'programada' });
@@ -76,5 +86,27 @@ describe('operations service', () => {
     OperationsService.acceptApplication(applications[0].id);
     const memberships = OperationsService.getProjects().filter((project) => project.assignedStudents.some((student) => student.email === applicant.email));
     expect(memberships.map((project) => project.id)).toEqual([second.id]);
+  });
+
+  it('keeps capacity informational when management accepts an application', () => {
+    const project = OperationsService.getProjects()[0];
+    OperationsService.updateProject({ ...project, maxStudents: 1, assignedStudents: [{ id: 'already-assigned', name: 'Equipo actual', email: 'actual@example.com' }] });
+    const applications = OperationsService.applyToProject(project.id, { id: 'accepted-over-capacity', name: 'Nuevo integrante', email: 'nuevo@example.com' });
+    OperationsService.acceptApplication(applications[0].id);
+    expect(OperationsService.getProjects().find((item) => item.id === project.id)?.assignedStudents).toHaveLength(2);
+  });
+
+  it('updates all shared-link fields through the dedicated project-links operation', () => {
+    const project = OperationsService.getProjects()[0];
+    OperationsService.updateProjectLinks(project.id, {
+      whatsappUrl: 'https://chat.whatsapp.com/equipo',
+      teamsMeetingUrl: 'https://teams.example.test/equipo',
+      githubUrl: 'https://github.com/icesi/equipo',
+      driveFolderUrl: 'https://drive.google.com/drive/folders/equipo',
+      resourceLinks: [{ id: 'video', label: 'Video de avance', url: 'https://youtube.com/watch?v=avance' }],
+    });
+    const updated = OperationsService.getProjects().find((item) => item.id === project.id)!;
+    expect(updated.githubUrl).toBe('https://github.com/icesi/equipo');
+    expect(updated.resourceLinks).toEqual([{ id: 'video', label: 'Video de avance', url: 'https://youtube.com/watch?v=avance' }]);
   });
 });

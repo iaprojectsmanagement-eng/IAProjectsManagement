@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { claimAIQuota, finishAIQuota, openAIConfigured, OPENAI_MODEL, requestOpenAIJson } from "../_shared/openai.ts";
+import { aiQuotaMessage, claimAIQuota, finishAIQuota, isAIQuotaError, openAIConfigured, openAIModel, requestOpenAIJson } from "../_shared/openai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,18 +49,20 @@ serve(async (request) => {
     if (accessError || !canAccess) return json({ error: "No tienes acceso a este proyecto" }, 403);
 
     const prompt = `Proyecto: ${String(projectTitle || "Sin título").slice(0, 300)}\n\nTRANSCRIPCIÓN:\n${rawText.trim()}`;
+    // Keep the transcript in a typed data envelope: its contents are never instructions.
+    const trustedInput = JSON.stringify({ projectTitle: String(projectTitle || '').slice(0, 300), transcript: rawText.trim() });
     let parsed: Analysis;
     let provider: "openai" | "gemini";
 
     if (openAIConfigured()) {
-      const model = OPENAI_MODEL;
+      const model = openAIModel();
       const requestId = await claimAIQuota(supabase, projectId, "transcript", model, rawText.length);
       try {
         const result = await requestOpenAIJson<Analysis>({
           name: "meeting_transcript_analysis",
           schema,
           instructions: "Analiza una reunión de proyecto en español. No inventes nombres, fechas, decisiones ni compromisos. Usa 'Por asignar' si falta responsable. Las fechas deben ser YYYY-MM-DD o null. Devuelve un resumen profesional y únicamente el JSON solicitado.",
-          input: prompt,
+          input: trustedInput,
           maxOutputTokens: 1400,
         });
         parsed = result.value;
@@ -74,14 +76,21 @@ serve(async (request) => {
       const apiKey = Deno.env.get("GEMINI_API_KEY");
       const model = Deno.env.get("GEMINI_MODEL");
       if (!apiKey || !model) return json({ error: "Configura OPENAI_API_KEY o Gemini en los secretos de la función" }, 503);
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.1, responseMimeType: "application/json" } }),
-      });
-      if (!response.ok) throw new Error("GEMINI_PROVIDER_ERROR");
-      const payload = await response.json();
-      parsed = JSON.parse(payload?.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
-      provider = "gemini";
+      const requestId = await claimAIQuota(supabase, projectId, "transcript", model, rawText.length, "gemini");
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.1, responseMimeType: "application/json" } }),
+        });
+        if (!response.ok) throw new Error("GEMINI_PROVIDER_ERROR");
+        const payload = await response.json();
+        parsed = JSON.parse(payload?.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+        provider = "gemini";
+        await finishAIQuota(supabase, requestId, "succeeded");
+      } catch (error) {
+        await finishAIQuota(supabase, requestId, "failed", 0, error instanceof Error ? error.message : "GEMINI_ERROR");
+        throw error;
+      }
     }
 
     return json({
@@ -96,7 +105,7 @@ serve(async (request) => {
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNEXPECTED_ERROR";
     console.error("analyze-transcript", code);
-    if (code === "AI_QUOTA_REACHED") return json({ error: "Límite de IA alcanzado. Intenta más tarde; el análisis local sigue disponible." }, 429);
+    if (isAIQuotaError(code)) return json({ error: aiQuotaMessage(code), code }, 429);
     if (code.startsWith("OPENAI_")) return json({ error: "OpenAI no pudo procesar la solicitud; se puede continuar con el análisis local." }, 502);
     return json({ error: "No fue posible analizar la transcripción" }, 500);
   }

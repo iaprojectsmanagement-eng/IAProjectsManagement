@@ -23,7 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMassImport, onOpenExport, 
               <p className="text-[11px] font-semibold tracking-wide text-white/80">Universidad</p>
               <h1 className="text-[26px] font-black tracking-tight text-white">icesi</h1>
             </div>
-            <span className="hidden border-l border-white/30 pl-4 text-[11px] font-semibold tracking-[0.14em] text-white/80 sm:block">IA PROJECT HUB</span>
+            <span className="hidden border-l border-white/30 pl-4 text-[11px] font-semibold tracking-[0.14em] text-white/80 sm:block">PROJECTS MANAGEMENT</span>
           </div>
           <div className="flex items-center gap-4 text-white">
             <button className="hidden items-center gap-2 text-xs font-bold md:flex" type="button" aria-label="Abrir menu"><Menu className="h-6 w-6" strokeWidth={1.8} /><span>Menu</span></button>
