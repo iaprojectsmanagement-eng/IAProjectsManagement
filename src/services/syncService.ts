@@ -66,6 +66,19 @@ export const isStaleMeetingStatusMutation = (error: unknown, mutation: Mutation)
     && mutation.table === 'project_meetings'
     && /una reunión realizada no puede cambiar de estado/i.test(message);
 };
+// Only validation/authorization failures are permanent. Network, 5xx and
+// session-refresh errors must remain in the outbox so they can be retried.
+// Discarding a permanent rejected write makes the confirmed server state the
+// source of truth instead of allowing one old browser action to poison every
+// later bootstrap for that browser.
+export const isPermanentMutationError = (error: unknown, mutation: Mutation) => {
+  if (isStaleMeetingStatusMutation(error, mutation) || isRlsRejectedMutation(error)) return true;
+  const details = error && typeof error === 'object' ? error as { message?: unknown; code?: unknown } : undefined;
+  const message = error instanceof Error ? error.message : String(details?.message || error || '');
+  const code = String(details?.code || '');
+  return ['23503', '23505', '23514', '22001', '22007', '22P02', 'P0001'].includes(code)
+    || /violates .*constraint|foreign key|duplicate key|already exists|invalid input syntax|una reunión (realizada|cancelada).*cambiar de estado|motivo.*obligatorio|project_access_denied|issue_identity_immutable/i.test(message);
+};
 const cache = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
 const LEGACY_LOCAL_KEYS = [
   'ia_hub_projects', 'ia_hub_students', 'ia_hub_applications', 'ia_hub_minutes',
@@ -221,7 +234,16 @@ export const SyncService = {
     emit({ status: 'loading', error: undefined });
     const request = (async () => {
       try {
-      await SyncService.flush();
+      // A failed local write must never make the read-only bootstrap fail.
+      // The queue is retained for transient faults and the user still sees the
+      // last confirmed database state. Permanent faults are removed in flush.
+      let pendingSyncError: unknown;
+      try {
+        await SyncService.flush();
+      } catch (error) {
+        pendingSyncError = error;
+        console.warn('No se pudo sincronizar una operación pendiente; se cargará el estado confirmado.', error);
+      }
       const results = await Promise.all([
         supabaseClient.from('profiles').select('id,project_id,full_name,email,student_code,role'),
         supabaseClient.from('projects').select('*,companies(name)'),
@@ -251,7 +273,13 @@ export const SyncService = {
       cache(CACHE.activity, (activityResult.data || []).map(mapActivity));
       cache(CACHE.applications, (applicationsResult.data || []).map((row: any): Application => ({ id: row.id, projectId: row.project_id, studentId: row.student_id, studentName: profiles.find((profile: any) => profile.id === row.student_id)?.full_name || 'Estudiante', studentEmail: profiles.find((profile: any) => profile.id === row.student_id)?.email || '', status: row.status, createdAt: iso(row.created_at) })));
       lastSuccessfulBootstrapAt = Date.now();
-      emit({ status: 'synced', pending: readQueue().length, lastSyncedAt: new Date().toISOString(), error: undefined });
+      const pending = readQueue().length;
+      emit({
+        status: pending ? 'pending' : 'synced',
+        pending,
+        lastSyncedAt: new Date().toISOString(),
+        error: pendingSyncError ? 'Hay cambios pendientes de sincronización. Se muestra la información confirmada.' : undefined,
+      });
       return state;
       } catch (error) {
       const detail = typeof error === 'object' && error && 'message' in error ? String(error.message) : undefined;
@@ -309,10 +337,8 @@ export const SyncService = {
           try {
             await execute(mutation);
           } catch (error) {
-            if (isStaleMeetingStatusMutation(error, mutation)) {
-              console.warn('Se descartó un estado de reunión obsoleto; se recargará la versión confirmada.', error);
-            } else if (isRlsRejectedMutation(error)) {
-              console.warn('Se descartó una operación local rechazada por permisos.', error);
+            if (isPermanentMutationError(error, mutation)) {
+              console.warn('Se descartó una operación local que el servidor rechazó de forma permanente.', error);
             } else {
               throw error;
             }

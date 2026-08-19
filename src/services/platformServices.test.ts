@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AuditService } from './auditService';
 import { DocumentExportService } from './documentExportService';
 import { StorageService } from './storageService';
-import { isRlsRejectedMutation, isStaleMeetingStatusMutation, SyncService, toDatabase } from './syncService';
+import { isPermanentMutationError, isRlsRejectedMutation, isStaleMeetingStatusMutation, SyncService, toDatabase } from './syncService';
 import { ProjectDocument, ProjectTask } from '../types';
 
 class MemoryStorage implements Storage {
@@ -33,6 +33,12 @@ describe('platform services', () => {
     const mutation = { id: 'stale', kind: 'upsert' as const, table: 'project_meetings' as const, payload: {}, createdAt: '2026-08-19T00:00:00Z' };
     expect(isStaleMeetingStatusMutation(new Error('Una reunión realizada no puede cambiar de estado'), mutation)).toBe(true);
     expect(isStaleMeetingStatusMutation(new Error('Una reunión realizada no puede cambiar de estado'), { ...mutation, table: 'project_tasks' })).toBe(false);
+  });
+
+  it('discards permanent database rejections but preserves transient failures for retry', () => {
+    const mutation = { id: 'pending', kind: 'upsert' as const, table: 'project_tasks' as const, payload: {}, createdAt: '2026-08-19T00:00:00Z' };
+    expect(isPermanentMutationError({ message: 'duplicate key value violates unique constraint', code: '23505' }, mutation)).toBe(true);
+    expect(isPermanentMutationError(new Error('network timeout'), mutation)).toBe(false);
   });
 
   it('keeps audit events locally and removes secrets or raw transcript text', () => {
