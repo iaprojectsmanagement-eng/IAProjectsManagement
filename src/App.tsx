@@ -116,6 +116,7 @@ const Workspace: React.FC = () => {
   const isMonitor = role === 'superuser';
   const [page, setPage] = useState<AppPage>('inicio');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectTab, setSelectedProjectTab] = useState<'resumen' | 'reuniones'>('resumen');
   const [revision, setRevision] = useState(0);
   const [syncState, setSyncState] = useState<SyncState>(SyncService.getState());
   const [dataReady, setDataReady] = useState(!SyncService.isRemoteMode());
@@ -141,7 +142,7 @@ const Workspace: React.FC = () => {
   const projects = useMemo(() => OperationsService.getProjects(), [revision]);
   const studentProject = projects.find((project) => project.assignedStudents.some((student) => student.email.toLowerCase() === userEmail.toLowerCase()));
   const alertCount = OperationsService.getIssues(isMonitor ? undefined : studentProject?.id).filter((issue) => issue.status !== 'resuelta').length;
-  const openProject = (id: string) => { setSelectedProjectId(id); setPage('proyectos'); };
+  const openProject = (id: string, target: 'resumen' | 'reuniones' = 'resumen') => { setSelectedProjectId(id); setSelectedProjectTab(target); setPage('proyectos'); };
   const shared = { projects, onChanged: refresh, onOpenProject: openProject };
 
   if (isLoading) {
@@ -249,12 +250,15 @@ const Workspace: React.FC = () => {
                         <button
                           disabled={full}
                           onClick={() => {
-                            try {
-                              OperationsService.applyToProject(project.id, { id: userId, name: userName, email: userEmail });
-                              refresh();
-                            } catch (caught) {
-                              window.alert(caught instanceof Error ? caught.message : 'No se pudo enviar la postulación.');
-                            }
+                            void (async () => {
+                              try {
+                                OperationsService.applyToProject(project.id, { id: userId, name: userName, email: userEmail });
+                                await SyncService.flush();
+                                refresh();
+                              } catch (caught) {
+                                window.alert(caught instanceof Error ? caught.message : 'No se pudo enviar la postulación.');
+                              }
+                            })();
                           }}
                           className="inline-flex items-center gap-1.5 rounded-xl bg-[#0D9488] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#0F766E] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                         >
@@ -277,7 +281,7 @@ const Workspace: React.FC = () => {
     else if (page === 'incidencias') content = <IssuesView {...shared} projectId={studentProject.id} isStudent />;
     else content = <DocumentsView {...shared} projectId={studentProject.id} isMonitor={false} />;
   } else if (selectedProjectId) {
-    content = <ProjectDetail {...shared} projectId={selectedProjectId} isMonitor onBack={() => setSelectedProjectId(null)} />;
+    content = <ProjectDetail {...shared} projectId={selectedProjectId} initialTab={selectedProjectTab} isMonitor onBack={() => setSelectedProjectId(null)} />;
   } else {
     switch (page) {
       case 'inicio': content = <MonitorHome {...shared} />; break;
@@ -301,7 +305,11 @@ const Workspace: React.FC = () => {
       alertCount={alertCount}
       syncState={SyncService.isRemoteMode() ? (syncState.status === 'error' ? 'error' : syncState.pending ? 'pending' : 'synced') : 'local'}
       canSwitchDemoRole={canSwitchDemoRole}
-      onLogout={isLocalDemo ? undefined : () => { void logout(); }}
+      onLogout={isLocalDemo ? undefined : () => {
+        void logout().catch((caught) => {
+          window.alert(caught instanceof Error ? caught.message : 'No se pudo cerrar sesión porque hay cambios pendientes de sincronizar.');
+        });
+      }}
       onNavigate={(nextPage) => { setSelectedProjectId(null); setPage(nextPage); }}
       onSwitchDemoRole={() => { switchRoleToggle(); setSelectedProjectId(null); setPage('inicio'); }}
     >

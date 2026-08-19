@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserRole } from '../types';
 import { claimLoginAttempt, clearLoginAttempts, loginRateLimitMessage } from '../services/clientRateLimit';
 import { supabaseClient } from '../services/supabaseClient';
+import { SyncService } from '../services/syncService';
 
 interface AuthContextType {
   role: UserRole;
@@ -75,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   const logout = async () => {
     if (localDemoEnabled) return;
+    await SyncService.flush();
     await supabaseClient?.auth.signOut();
     await loadUser(null);
   };

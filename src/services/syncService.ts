@@ -53,6 +53,10 @@ const listeners = new Set<(next: SyncState) => void>();
 const emit = (patch: Partial<SyncState>) => { state = { ...state, ...patch }; listeners.forEach((listener) => listener(state)); };
 const readQueue = (): Mutation[] => { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); } catch { return []; } };
 const writeQueue = (items: Mutation[]) => { localStorage.setItem(OUTBOX_KEY, JSON.stringify(items)); emit({ pending: items.length, status: items.length ? 'pending' : 'synced' }); };
+export const isRlsRejectedMutation = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error || '');
+  return /row-level security policy|permission denied for table|new row violates/i.test(message);
+};
 const cache = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
 const LEGACY_LOCAL_KEYS = [
   'ia_hub_projects', 'ia_hub_students', 'ia_hub_applications', 'ia_hub_minutes',
@@ -293,7 +297,12 @@ export const SyncService = {
         while (true) {
           const mutation = readQueue()[0];
           if (!mutation) break;
-          await execute(mutation);
+          try {
+            await execute(mutation);
+          } catch (error) {
+            if (!isRlsRejectedMutation(error)) throw error;
+            console.warn('Se descartó una operación local rechazada por permisos.', error);
+          }
           // Keep entries queued while an earlier write is in flight. Removing a
           // stale in-memory queue here used to discard newly-created meetings.
           writeQueue(readQueue().filter((item) => item.id !== mutation.id));

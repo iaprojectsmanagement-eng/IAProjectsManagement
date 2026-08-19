@@ -410,7 +410,7 @@ const Empty: React.FC<{ text: string }> = ({ text }) => (
 interface Common {
   projects: Project[];
   onChanged: () => void;
-  onOpenProject: (id: string) => void;
+  onOpenProject: (id: string, target?: 'resumen' | 'reuniones') => void;
 }
 
 const limitWindowLabel: Record<AiLimitIncident['limitWindow'], string> = {
@@ -515,9 +515,9 @@ export const MonitorHome: React.FC<Common> = ({ projects, onOpenProject }) => {
   const overdue = OperationsService.getTasks().filter((task) => isTaskOverdue(task));
   const minutes = OperationsService.getMeetings().filter(meetingNeedsMinute);
   const actions = [
-    ...issues.map((issue) => ({ id: issue.id, projectId: issue.projectId, label: issue.title, detail: 'Incidencia prioritaria', tone: 'red' as const })),
-    ...overdue.map((task) => ({ id: task.id, projectId: task.projectId, label: task.title, detail: `Tarea vencida · ${task.assigneeName}`, tone: 'amber' as const })),
-    ...minutes.map((meeting) => ({ id: meeting.id, projectId: meeting.projectId, label: meeting.title, detail: 'Reunión realizada sin acta', tone: 'indigo' as const })),
+    ...issues.map((issue) => ({ id: issue.id, projectId: issue.projectId, label: issue.title, detail: 'Incidencia prioritaria', tone: 'red' as const, target: 'resumen' as const })),
+    ...overdue.map((task) => ({ id: task.id, projectId: task.projectId, label: task.title, detail: `Tarea vencida · ${task.assigneeName}`, tone: 'amber' as const, target: 'resumen' as const })),
+    ...minutes.map((meeting) => ({ id: meeting.id, projectId: meeting.projectId, label: meeting.title, detail: 'Reunión realizada sin acta', tone: 'indigo' as const, target: 'reuniones' as const })),
   ].slice(0, 10);
 
   return (
@@ -543,7 +543,7 @@ export const MonitorHome: React.FC<Common> = ({ projects, onOpenProject }) => {
           {actions.map((action) => (
             <button
               key={`${action.detail}-${action.id}`}
-              onClick={() => onOpenProject(action.projectId)}
+              onClick={() => onOpenProject(action.projectId, action.target)}
               className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3.5 text-left transition hover:border-teal-200 hover:bg-teal-50/30"
             >
               <Badge tone={action.tone}>{action.detail}</Badge>
@@ -2889,13 +2889,49 @@ const ProjectLinksManager: React.FC<{ project: Project; onChanged: () => void }>
   );
 };
 
-export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () => void; isMonitor?: boolean }> = ({
+const TeamPendingActions: React.FC<{ projectId: string; onOpenMeetings: () => void }> = ({ projectId, onOpenMeetings }) => {
+  const issues = OperationsService.getIssues(projectId).filter((issue) => issue.status !== 'resuelta');
+  const overdue = OperationsService.getTasks(projectId).filter((task) => isTaskOverdue(task));
+  const minutes = OperationsService.getMeetings(projectId).filter(meetingNeedsMinute);
+  const actions = [
+    ...issues.map((issue) => ({ id: issue.id, label: issue.title, detail: 'Incidencia abierta', tone: 'red' as const, onClick: undefined as (() => void) | undefined })),
+    ...overdue.map((task) => ({ id: task.id, label: task.title, detail: 'Tarea vencida', tone: 'amber' as const, onClick: undefined as (() => void) | undefined })),
+    ...minutes.map((meeting) => ({ id: meeting.id, label: meeting.title, detail: 'Reunión sin acta', tone: 'indigo' as const, onClick: onOpenMeetings })),
+  ];
+
+  return (
+    <Card className="mt-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="font-extrabold text-[#0E2C40]">Pendientes por resolver del equipo</h2>
+        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">{actions.length}</span>
+      </div>
+      <div className="space-y-2">
+        {actions.map((action) => (
+          <button
+            type="button"
+            key={`${action.detail}-${action.id}`}
+            onClick={action.onClick}
+            className={`flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left ${action.onClick ? 'transition hover:border-teal-200 hover:bg-teal-50/30' : 'cursor-default'}`}
+          >
+            <Badge tone={action.tone}>{action.detail}</Badge>
+            <b className="min-w-0 flex-1 truncate text-sm text-[#0E2C40]">{action.label}</b>
+            {action.onClick && <ChevronRight className="h-4 w-4 text-slate-400" />}
+          </button>
+        ))}
+        {!actions.length && <Empty text="No hay pendientes para tu equipo." />}
+      </div>
+    </Card>
+  );
+};
+
+export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () => void; isMonitor?: boolean; initialTab?: 'resumen' | 'reuniones' }> = ({
   projects,
   projectId,
   onChanged,
   onOpenProject,
   onBack,
   isMonitor,
+  initialTab = 'resumen',
 }) => {
   const project = projects.find((item) => item.id === projectId);
   const [tab, setTab] = useState<'resumen' | 'tareas' | 'reuniones' | 'incidencias' | 'documentos' | 'equipo'>('resumen');
@@ -2906,7 +2942,7 @@ export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () =
   const [linkUrl, setLinkUrl] = useState('');
   const [contact, setContact] = useState({ name: '', email: '', phone: '' });
 
-  useEffect(() => setTab('resumen'), [projectId, isMonitor]);
+  useEffect(() => setTab(initialTab), [projectId, isMonitor, initialTab]);
 
   if (!project) return <Empty text="El proyecto ya no existe o no está disponible." />;
 
@@ -2945,7 +2981,7 @@ export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () =
     <div className="mx-auto max-w-6xl space-y-5">
       {tab === 'resumen' && <ProjectLinksManager project={project} onChanged={onChanged} />}
       {onBack && (
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0D9488] hover:underline">
+        <button onClick={onBack} className="back-button inline-flex items-center gap-1.5 text-xs font-bold text-[#0D9488] hover:underline">
           ← Volver a proyectos
         </button>
       )}
@@ -3001,13 +3037,16 @@ export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () =
 
       <div>
         {tab === 'resumen' && (
-          <ProjectSummary
-            project={project}
-            links={links}
-            activity={activity}
-            onAddLink={() => setLinkModal(true)}
-            onContacts={() => setContactModal(true)}
-          />
+          <>
+            <ProjectSummary
+              project={project}
+              links={links}
+              activity={activity}
+              onAddLink={() => setLinkModal(true)}
+              onContacts={() => setContactModal(true)}
+            />
+            {!isMonitor && <TeamPendingActions projectId={project.id} onOpenMeetings={() => setTab('reuniones')} />}
+          </>
         )}
         {tab === 'tareas' && <TasksView projects={projects} projectId={project.id} isMonitor={isMonitor} onChanged={onChanged} onOpenProject={onOpenProject} />}
         {tab === 'reuniones' && <MeetingsView projects={projects} projectId={project.id} isMonitor={isMonitor} onChanged={onChanged} onOpenProject={onOpenProject} />}
@@ -3192,7 +3231,7 @@ export const PeopleView: React.FC<Common> = ({ projects, onChanged }) => {
             ]}
           />
         </div>
-        <span className="text-xs font-semibold text-slate-400">{visibleStudents.length} personas listadas</span>
+        <span className="dynamic-copy text-xs font-semibold">{visibleStudents.length} personas listadas</span>
       </div>
 
       {applications.length > 0 && (

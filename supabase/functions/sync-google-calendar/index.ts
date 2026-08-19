@@ -117,7 +117,7 @@ serve(async (request) => {
       ? meeting.attendees.filter((email: unknown) => typeof email === "string" && String(email).includes("@")).map((email: string) => ({ email }))
       : [];
     const body = method === "DELETE" ? undefined : JSON.stringify({
-      summary: meeting.title,
+      summary: `IA proyecto "${meeting.projects?.title || "Proyecto"}" - ${meeting.title}`,
       description: `${meeting.agenda || ""}\n\nProyecto: ${meeting.projects?.title || ""}${meeting.meeting_url ? `\nEnlace: ${meeting.meeting_url}` : ""}${meeting.meeting_password ? `\nContraseña: ${meeting.meeting_password}` : ""}`.trim(),
       start: { dateTime: meeting.starts_at, timeZone: meeting.timezone || "America/Bogota" },
       end: { dateTime: end, timeZone: meeting.timezone || "America/Bogota" },

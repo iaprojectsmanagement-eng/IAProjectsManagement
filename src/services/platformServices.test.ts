@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AuditService } from './auditService';
 import { DocumentExportService } from './documentExportService';
 import { StorageService } from './storageService';
-import { SyncService, toDatabase } from './syncService';
+import { isRlsRejectedMutation, SyncService, toDatabase } from './syncService';
 import { ProjectDocument, ProjectTask } from '../types';
 
 class MemoryStorage implements Storage {
@@ -22,6 +22,11 @@ describe('platform services', () => {
     const task: ProjectTask = { id: crypto.randomUUID(), projectId: crypto.randomUUID(), title: 'Validar datos', assigneeName: 'Ana', dueDate: '2026-08-20', status: 'pendiente', priority: 'alta', source: 'manual', createdAt: '2026-08-08T00:00:00Z', updatedAt: '2026-08-08T00:00:00Z' };
     expect(toDatabase.task(task)).toMatchObject({ id: task.id, project_id: task.projectId, assignee_name: 'Ana', due_date: '2026-08-20' });
     expect(toDatabase.task(task)).not.toHaveProperty('projectId');
+  });
+
+  it('recognizes a rejected local mutation so a later login is not blocked by stale client data', () => {
+    expect(isRlsRejectedMutation(new Error('new row violates row-level security policy for table "project_meetings"'))).toBe(true);
+    expect(isRlsRejectedMutation(new Error('network timeout'))).toBe(false);
   });
 
   it('keeps audit events locally and removes secrets or raw transcript text', () => {

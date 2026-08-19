@@ -24,6 +24,7 @@ describe('Supabase deployment contracts', () => {
     expect(calendar).toContain('supabase.auth.getUser()');
     expect(calendar).toContain('calendar_sync_status: "error"');
     expect(calendar).toContain('timeZone');
+    expect(calendar).toContain('IA proyecto "${meeting.projects?.title || "Proyecto"}" - ${meeting.title}');
   });
 
   it('protects scheduled follow-up with a dedicated secret', () => {
