@@ -169,19 +169,36 @@ const Workspace: React.FC = () => {
             {syncState.error || 'Estamos aplicando tus permisos y preparando la información autorizada.'}
           </p>
           {syncState.status === 'error' && (
-            <button
-              onClick={() => {
-                setDataReady(false);
-                void SyncService.bootstrap().then(() => {
-                  OperationsService.initialise();
-                  setDataReady(true);
-                  refresh();
-                });
-              }}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#0D9488] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#0F766E]"
-            >
-              Reintentar
-            </button>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button
+                onClick={() => {
+                  setDataReady(false);
+                  void SyncService.bootstrap().then(() => {
+                    OperationsService.initialise();
+                    setDataReady(true);
+                    refresh();
+                  });
+                }}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#0D9488] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#0F766E]"
+              >
+                Reintentar
+              </button>
+              <button
+                onClick={() => {
+                  if (!window.confirm('Se descartarán solo los cambios que este navegador no logró sincronizar. Los datos ya guardados en la plataforma no se eliminarán. ¿Continuar?')) return;
+                  SyncService.discardPendingChanges();
+                  setDataReady(false);
+                  void SyncService.bootstrap().then(() => {
+                    OperationsService.initialise();
+                    setDataReady(true);
+                    refresh();
+                  });
+                }}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+              >
+                Recuperar cambios pendientes
+              </button>
+            </div>
           )}
         </div>
       </div>

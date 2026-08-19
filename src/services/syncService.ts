@@ -204,6 +204,13 @@ const execute = async (mutation: Mutation) => {
 export const SyncService = {
   isRemoteMode: () => remoteMode,
   getState: () => state,
+  // Emergency recovery for an old browser queue rejected by the server. This
+  // never deletes database records; it only abandons writes that were not
+  // accepted remotely, after the user explicitly confirms the action.
+  discardPendingChanges: () => {
+    localStorage.removeItem(OUTBOX_KEY);
+    emit({ status: 'synced', pending: 0, error: undefined });
+  },
   subscribe: (listener: (next: SyncState) => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
   startRealtime: (onHydrated: () => void) => {
     if (!remoteMode || !supabaseClient) return () => undefined;
