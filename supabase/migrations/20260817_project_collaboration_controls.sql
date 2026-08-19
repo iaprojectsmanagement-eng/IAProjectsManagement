@@ -67,7 +67,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'PROJECT_NOT_FOUND'; END IF;
 END;
 $$;
-REVOKE ALL ON FUNCTION public.set_project_links(UUID, JSONB, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.set_project_links(UUID, JSONB, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.set_project_links(UUID, JSONB, TEXT, TEXT, TEXT, TEXT) TO authenticated;
 
 DROP POLICY IF EXISTS issues_manage_monitor ON public.project_issues;

@@ -90,17 +90,23 @@ describe('Supabase deployment contracts', () => {
     expect(helper).toContain('AI_QUOTA_${result.quota.toUpperCase()}');
   });
 
-  it('versions the trusted login limit and keeps client protection credential-free', () => {
+  it('enforces password-login limits on the server without exposing account existence', () => {
     const config = read('supabase/config.toml');
     const auth = read('src/context/AuthContext.tsx');
-    const limiter = read('src/services/clientRateLimit.ts');
+    const sql = read('supabase/migrations/20260819_server_login_ip_rate_limit.sql');
+    const login = read('supabase/functions/password-sign-in/index.ts');
     const sync = read('src/services/syncService.ts');
     expect(config).toContain('enable_signup = false');
     expect(config).toContain('sign_in_sign_ups = 10');
-    expect(auth).toContain('claimLoginAttempt');
-    expect(auth).toContain('clearLoginAttempts');
-    expect(limiter).not.toContain('password');
-    expect(limiter).not.toContain('email');
+    expect(auth).toContain("functions.invoke('password-sign-in'");
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.login_ip_rate_limits');
+    expect(sql).toContain("interval '5 minutes'");
+    expect(sql).toContain('current_limit.attempts >= 10');
+    expect(sql).toContain('FROM PUBLIC, anon, authenticated');
+    expect(sql).toContain('GRANT EXECUTE ON FUNCTION public.claim_password_login_attempt(TEXT) TO service_role');
+    expect(login).toContain('hashIp(getIp(request), serviceRoleKey)');
+    expect(login).toContain('return json({ error: "Credenciales no válidas." }, 401)');
+    expect(login).toContain('}, 429)');
     expect(sync).toContain('MIN_BOOTSTRAP_INTERVAL_MS');
     expect(sync).toContain('bootstrapPromise');
   });
@@ -152,5 +158,11 @@ describe('Supabase deployment contracts', () => {
     expect(sql).toContain('project_documents_delete_project');
     expect(sql).toContain('can_access_project(project_id)');
     expect(workflow).toContain("from('project_documents').delete()");
+  });
+
+  it('allows task deletion only inside the authenticated project', () => {
+    const sql = read('supabase/migrations/20260819_authorized_task_deletion.sql');
+    expect(sql).toContain('CREATE POLICY tasks_delete_project');
+    expect(sql).toContain('can_access_project(project_id)');
   });
 });

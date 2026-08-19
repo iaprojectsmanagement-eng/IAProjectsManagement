@@ -1111,10 +1111,10 @@ export const TasksView: React.FC<Common & { projectId?: string; isMonitor?: bool
         )}
       </Modal>
 
-      <Card className="overflow-hidden p-0">
+      <Card className="overflow-visible p-0">
         <div className="divide-y divide-slate-100">
           {tasks.map((task) => (
-            <div key={task.id} className="flex flex-wrap items-center gap-3 p-4 transition hover:bg-slate-50/50">
+            <div key={task.id} className="relative flex flex-wrap items-center gap-3 p-4 transition hover:bg-slate-50/50">
               <div className="dynamic-copy min-w-[220px] flex-1">
                 <b className={`block text-sm font-bold ${task.status === 'completada' ? 'text-slate-400 line-through' : 'text-[#0E2C40]'}`}>
                   {task.title}
@@ -1134,7 +1134,7 @@ export const TasksView: React.FC<Common & { projectId?: string; isMonitor?: bool
                   onChanged();
                 }}
                 ariaLabel={`Estado de ${task.title}`}
-                className="w-36"
+                className="z-20 w-36"
                 options={taskStatuses.map((status) => ({ value: status, label: status.replace('_', ' ') }))}
               />
               <Button
@@ -1152,20 +1152,18 @@ export const TasksView: React.FC<Common & { projectId?: string; isMonitor?: bool
                   Ver
                 </Button>
               )}
-              {isMonitor && (
-                <Button
-                  tone="ghost"
-                  aria-label={`Eliminar ${task.title}`}
-                  onClick={() => {
-                    if (window.confirm('¿Eliminar esta tarea?')) {
-                      OperationsService.deleteTask(task.id);
-                      onChanged();
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-rose-500" />
-                </Button>
-              )}
+              <Button
+                tone="ghost"
+                aria-label={`Eliminar ${task.title}`}
+                onClick={() => {
+                  if (window.confirm('¿Eliminar esta tarea?')) {
+                    OperationsService.deleteTask(task.id);
+                    onChanged();
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 text-rose-500" />
+              </Button>
             </div>
           ))}
           {!tasks.length && (
@@ -1781,7 +1779,6 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
   const [editingMeeting, setEditingMeeting] = useState<ProjectMeeting | null>(null);
   const [agendaView, setAgendaView] = useState<'lista' | 'calendario'>('lista');
   const [globalProject, setGlobalProject] = useState(projectId || projects[0]?.id || '');
-  const [standaloneActa, setStandaloneActa] = useState(false);
   const [calendarBusy, setCalendarBusy] = useState<string | null>(null);
   const [batchCalendarBusy, setBatchCalendarBusy] = useState(false);
   const [calendarEmbedVersion, setCalendarEmbedVersion] = useState(0);
@@ -1806,13 +1803,17 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
     }
   };
 
-  const changeStatus = (meeting: ProjectMeeting, status: ProjectMeeting['status']) => {
+  const changeStatus = async (meeting: ProjectMeeting, status: ProjectMeeting['status']) => {
     try {
       const updated = OperationsService.updateMeetingStatus(meeting.id, status);
       onChanged();
+      // Persist the status before Calendar (and the Realtime refresh it
+      // triggers) can read the meeting. This prevents an optimistic local
+      // state from being replaced with the older row from Supabase.
+      if (SyncService.isRemoteMode()) await SyncService.flush();
       if (updated && SyncService.isRemoteMode()) {
         const action = status === 'cancelada' || status === 'no_realizada' ? 'cancel' : 'upsert';
-        void syncCalendar(updated, action);
+        await syncCalendar(updated, action);
       }
     } catch (caught) {
       window.alert(caught instanceof Error ? caught.message : 'No se pudo cambiar el estado.');
@@ -1924,22 +1925,6 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
         </div>
       </div>
 
-      {projectId && project && (
-        <div>
-          <Button tone="secondary" onClick={() => setStandaloneActa((value) => !value)}>
-            {standaloneActa ? 'Ocultar carga' : 'Crear acta desde TXT sin reunión'}
-          </Button>
-          {standaloneActa && (
-            <ActaUploader
-              project={project}
-              onDone={() => {
-                setStandaloneActa(false);
-                onChanged();
-              }}
-            />
-          )}
-        </div>
-      )}
 
       {isMonitor && agendaView === 'calendario' ? (
         <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1991,20 +1976,20 @@ export const MeetingsView: React.FC<Common & { projectId?: string; isMonitor?: b
                         <Button tone="secondary" onClick={() => setEditingMeeting(meeting)}>
                           Editar
                         </Button>
-                        <Button tone="secondary" onClick={() => changeStatus(meeting, 'realizada')}>
+                        <Button tone="secondary" onClick={() => void changeStatus(meeting, 'realizada')}>
                           <Check className="h-4 w-4" />
                           Realizada
                         </Button>
-                        <Button tone="secondary" onClick={() => changeStatus(meeting, 'no_realizada')}>
+                        <Button tone="secondary" onClick={() => void changeStatus(meeting, 'no_realizada')}>
                           No realizada
                         </Button>
-                        <Button tone="secondary" onClick={() => changeStatus(meeting, 'cancelada')}>
+                        <Button tone="secondary" onClick={() => void changeStatus(meeting, 'cancelada')}>
                           Cancelar
                         </Button>
                       </>
                     )}
                     {(meeting.status === 'cancelada' || meeting.status === 'no_realizada') && (
-                      <Button tone="secondary" onClick={() => changeStatus(meeting, 'reprogramada')}>
+                      <Button tone="secondary" onClick={() => void changeStatus(meeting, 'reprogramada')}>
                         Reprogramar
                       </Button>
                     )}
@@ -2979,7 +2964,6 @@ export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () =
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      {tab === 'resumen' && <ProjectLinksManager project={project} onChanged={onChanged} />}
       {onBack && (
         <button onClick={onBack} className="back-button inline-flex items-center gap-1.5 text-xs font-bold text-[#0D9488] hover:underline">
           ← Volver a proyectos
@@ -3038,6 +3022,7 @@ export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () =
       <div>
         {tab === 'resumen' && (
           <>
+            {!isMonitor && <TeamPendingActions projectId={project.id} onOpenMeetings={() => setTab('reuniones')} />}
             <ProjectSummary
               project={project}
               links={links}
@@ -3045,7 +3030,6 @@ export const ProjectDetail: React.FC<Common & { projectId: string; onBack?: () =
               onAddLink={() => setLinkModal(true)}
               onContacts={() => setContactModal(true)}
             />
-            {!isMonitor && <TeamPendingActions projectId={project.id} onOpenMeetings={() => setTab('reuniones')} />}
           </>
         )}
         {tab === 'tareas' && <TasksView projects={projects} projectId={project.id} isMonitor={isMonitor} onChanged={onChanged} onOpenProject={onOpenProject} />}

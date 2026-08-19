@@ -83,7 +83,7 @@ BEGIN
   RETURN jsonb_build_object('requestId', request_id);
 END;
 $$;
-REVOKE ALL ON FUNCTION public.claim_ai_request(UUID, TEXT, TEXT, TEXT, INTEGER) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.claim_ai_request(UUID, TEXT, TEXT, TEXT, INTEGER) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.claim_ai_request(UUID, TEXT, TEXT, TEXT, INTEGER) TO authenticated;
 
 -- Sources and transcripts cannot be removed through the application API in

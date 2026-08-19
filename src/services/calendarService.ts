@@ -71,6 +71,10 @@ export const CalendarService = {
       calendarSync: data.mode === 'google' ? 'sincronizado' : 'simulado',
       calendarEventUrl: action === 'cancel' ? undefined : data.eventUrl,
     });
+    // Do not let the following Realtime bootstrap observe the calendar patch
+    // only in local storage.  Awaiting this write preserves the status that
+    // was just confirmed before the UI is refreshed again.
+    await SyncService.flush();
     return { ...data, meeting };
   },
 };
