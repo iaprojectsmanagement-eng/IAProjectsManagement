@@ -57,6 +57,15 @@ export const isRlsRejectedMutation = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error || '');
   return /row-level security policy|permission denied for table|new row violates/i.test(message);
 };
+// A completed meeting is intentionally immutable. This error indicates an old
+// browser outbox entry lost a race with the confirmed state. Keeping it would
+// retry forever and block bootstrap from showing the authoritative row.
+export const isStaleMeetingStatusMutation = (error: unknown, mutation: Mutation) => {
+  const message = error instanceof Error ? error.message : String(error || '');
+  return mutation.kind === 'upsert'
+    && mutation.table === 'project_meetings'
+    && /una reunión realizada no puede cambiar de estado/i.test(message);
+};
 const cache = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
 const LEGACY_LOCAL_KEYS = [
   'ia_hub_projects', 'ia_hub_students', 'ia_hub_applications', 'ia_hub_minutes',
@@ -300,8 +309,13 @@ export const SyncService = {
           try {
             await execute(mutation);
           } catch (error) {
-            if (!isRlsRejectedMutation(error)) throw error;
-            console.warn('Se descartó una operación local rechazada por permisos.', error);
+            if (isStaleMeetingStatusMutation(error, mutation)) {
+              console.warn('Se descartó un estado de reunión obsoleto; se recargará la versión confirmada.', error);
+            } else if (isRlsRejectedMutation(error)) {
+              console.warn('Se descartó una operación local rechazada por permisos.', error);
+            } else {
+              throw error;
+            }
           }
           // Keep entries queued while an earlier write is in flight. Removing a
           // stale in-memory queue here used to discard newly-created meetings.
